@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace TooltipFixMod
 {
-    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "1.6.11")]
+    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.0")]
     public class TooltipFixPlugin : BaseUnityPlugin
     {
         public static string ConfigPath;
