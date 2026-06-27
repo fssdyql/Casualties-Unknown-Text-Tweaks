@@ -288,7 +288,6 @@ namespace TooltipFixMod
                                 totalStats[stat.Field] = (0, stat.ValueColor ?? "#FFFFFF", stat.Prefix ?? "", stat.Suffix ?? "");
 
                             var current = totalStats[stat.Field];
-                            // 修改点：使用 Calculate 处理复杂函数与固定值
                             double addedVal = stat.Calculate(effectiveML);
                             totalStats[stat.Field] = (current.TotalVal + addedVal, current.Color, current.Prefix, current.Suffix);
 
@@ -312,7 +311,6 @@ namespace TooltipFixMod
                             double addedDuration = 0, addedTickMulti = 0;
                             string mode = buff.StackMode?.ToUpper() ?? "DURATION";
 
-                            // 修改点：支持持续时间的复杂函数和基础固定值
                             double calcDur = buff.CalculateDuration(effectiveML);
 
                             if (mode == "DURATION")
@@ -360,7 +358,6 @@ namespace TooltipFixMod
                     {
                         if (string.IsNullOrEmpty(tick.Field)) continue;
 
-                        // 修改点：让 TickStats 也支持复杂函数及固定值
                         double tickVal = tick.Calculate(multiplier);
 
                         string tValStr = Math.Round(tickVal, 2).ToString("0.##");
@@ -400,31 +397,30 @@ namespace TooltipFixMod
     public class LiquidEntry { [XmlAttribute("Name")] public string Name; public UsageMethodEntry Oral; public UsageMethodEntry Injection; public UsageMethodEntry Topical; [XmlArray("DosePrompts"), XmlArrayItem("DosePrompt")] public List<DosePromptEntry> DosePrompts = new List<DosePromptEntry>(); }
     public class UsageMethodEntry { [XmlArray("Stats"), XmlArrayItem("Stat")] public List<StatEntry> Stats = new List<StatEntry>(); [XmlArray("Specials"), XmlArrayItem("Special")] public List<string> Specials = new List<string>(); [XmlArray("Buffs"), XmlArrayItem("Buff")] public List<BuffEntry> Buffs = new List<BuffEntry>(); }
 
-    // ======== 核心修改：支持复杂函数规则 ========
     public class StatRule
     {
         [XmlAttribute] public double MinML = 0;
         [XmlAttribute] public double MaxML = 999999;
-        [XmlAttribute] public string Mode = "Linear"; // 模式: "Linear" (线性) 或 "Inverse" (反比)
-        [XmlAttribute] public double BaseValue = 0; // 该区间的固定基础值
-        [XmlAttribute] public double Multiplier = 0; // 线性乘区 或 反比系数
-        [XmlAttribute] public bool UseMaxLimit = false; // 是否启用最大值限制
+        [XmlAttribute] public string Mode = "Linear"; 
+        [XmlAttribute] public double BaseValue = 0; 
+        [XmlAttribute] public double Multiplier = 0; 
+        [XmlAttribute] public bool UseMaxLimit = false; 
         [XmlAttribute] public double MaxLimit = 0;
-        [XmlAttribute] public bool UseMinLimit = false; // 是否启用最小值限制
+        [XmlAttribute] public bool UseMinLimit = false; 
         [XmlAttribute] public double MinLimit = 0;
     }
 
     public class StatEntry
     {
         [XmlAttribute] public string Field;
-        [XmlAttribute] public double BaseValue = 0;  // 每次使用固定的数值
-        [XmlAttribute] public double ValuePerML = 0; // 每ML增加的数值(原有逻辑)
+        [XmlAttribute] public double BaseValue = 0;  
+        [XmlAttribute] public double ValuePerML = 0; 
         [XmlAttribute] public string ValueColor = "#FFFFFF";
         [XmlAttribute] public string Prefix = "";
         [XmlAttribute] public string Suffix = "";
 
         [XmlElement("Rule")]
-        public List<StatRule> Rules = new List<StatRule>(); // 复杂条件与函数支持
+        public List<StatRule> Rules = new List<StatRule>(); 
 
         public double Calculate(double x)
         {
@@ -437,10 +433,10 @@ namespace TooltipFixMod
                         double val = rule.BaseValue;
                         if (rule.Mode != null && rule.Mode.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
                         {
-                            double denom = (x == 0) ? 0.0001 : x; // 防止除0错误
+                            double denom = (x == 0) ? 0.0001 : x; 
                             val += (rule.Multiplier / denom);
                         }
-                        else // Linear
+                        else 
                         {
                             val += (rule.Multiplier * x);
                         }
@@ -451,7 +447,6 @@ namespace TooltipFixMod
                     }
                 }
             }
-            // 如果没有匹配的Rule或没有写Rule，退回基础固定值+每ML成长值
             return BaseValue + (ValuePerML * x);
         }
     }
@@ -462,8 +457,8 @@ namespace TooltipFixMod
         [XmlAttribute] public string NameColor = "#b7b7b7";
         [XmlAttribute] public string ValueColor = "#00FF00";
         [XmlAttribute] public string StackMode = "Duration";
-        [XmlAttribute] public double BaseDuration = 0; // 固定的持续时间
-        [XmlAttribute] public double DurationPerML = 0; // 每ML增加的时间
+        [XmlAttribute] public double BaseDuration = 0; 
+        [XmlAttribute] public double DurationPerML = 0; 
 
         [XmlElement("DurationRule")]
         public List<StatRule> DurationRules = new List<StatRule>();
@@ -499,7 +494,6 @@ namespace TooltipFixMod
             return BaseDuration + (DurationPerML * x);
         }
     }
-    // ===========================================
 
     public class DosePromptEntry { [XmlAttribute] public double Threshold; [XmlAttribute] public string Message; }
     public class EffectPromptEntry { [XmlAttribute] public string Field; [XmlAttribute] public double Threshold; [XmlAttribute] public string Message; }
