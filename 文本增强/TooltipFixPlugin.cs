@@ -20,7 +20,7 @@ namespace TooltipFixMod
             ConfigPath = Path.Combine(Application.dataPath, "Lang", "LiquidEffects.xml");
             LiquidEffectManager.LoadConfig();
             Harmony.CreateAndPatchAll(typeof(UIUtilPatch));
-            Logger.LogInfo($"TooltipFixMod v1.6.11 Loaded - Data Layer Interception Enabled!");
+            Logger.LogInfo($"TooltipFixMod v1.6.12 Loaded - Custom Math Rules Enabled!");
         }
     }
 
@@ -288,7 +288,8 @@ namespace TooltipFixMod
                                 totalStats[stat.Field] = (0, stat.ValueColor ?? "#FFFFFF", stat.Prefix ?? "", stat.Suffix ?? "");
 
                             var current = totalStats[stat.Field];
-                            double addedVal = stat.ValuePerML * effectiveML;
+                            // 修改点：使用 Calculate 处理复杂函数与固定值
+                            double addedVal = stat.Calculate(effectiveML);
                             totalStats[stat.Field] = (current.TotalVal + addedVal, current.Color, current.Prefix, current.Suffix);
 
                             if (!methodTotalStats.ContainsKey(stat.Field)) methodTotalStats[stat.Field] = 0;
@@ -303,15 +304,32 @@ namespace TooltipFixMod
                         foreach (var buff in useData.Buffs)
                         {
                             if (string.IsNullOrEmpty(buff.Name)) continue;
-                            if (!totalBuffs.ContainsKey(buff.Name)) totalBuffs[buff.Name] = (buff.BaseDuration, 0, buff);
+
+                            bool isFirstInit = !totalBuffs.ContainsKey(buff.Name);
+                            if (isFirstInit) totalBuffs[buff.Name] = (0, 0, buff);
 
                             var current = totalBuffs[buff.Name];
                             double addedDuration = 0, addedTickMulti = 0;
                             string mode = buff.StackMode?.ToUpper() ?? "DURATION";
 
-                            if (mode == "DURATION") { addedDuration = buff.DurationPerML * effectiveML; addedTickMulti = (current.TickMultiplier == 0) ? 1.0 : 0; }
-                            else if (mode == "EFFECT") { addedTickMulti = effectiveML; }
-                            else { addedDuration = buff.DurationPerML * effectiveML; addedTickMulti = effectiveML; }
+                            // 修改点：支持持续时间的复杂函数和基础固定值
+                            double calcDur = buff.CalculateDuration(effectiveML);
+
+                            if (mode == "DURATION")
+                            {
+                                addedDuration = calcDur;
+                                addedTickMulti = (current.TickMultiplier == 0) ? 1.0 : 0;
+                            }
+                            else if (mode == "EFFECT")
+                            {
+                                addedTickMulti = effectiveML;
+                                if (isFirstInit) addedDuration = calcDur;
+                            }
+                            else
+                            {
+                                addedDuration = calcDur;
+                                addedTickMulti = effectiveML;
+                            }
 
                             totalBuffs[buff.Name] = (current.Duration + addedDuration, current.TickMultiplier + addedTickMulti, buff);
                         }
@@ -341,7 +359,10 @@ namespace TooltipFixMod
                     foreach (var tick in buffDef.TickStats)
                     {
                         if (string.IsNullOrEmpty(tick.Field)) continue;
-                        double tickVal = tick.ValuePerML * multiplier;
+
+                        // 修改点：让 TickStats 也支持复杂函数及固定值
+                        double tickVal = tick.Calculate(multiplier);
+
                         string tValStr = Math.Round(tickVal, 2).ToString("0.##");
                         string tPrefix = string.IsNullOrEmpty(tick.Prefix) && tickVal > 0 ? "+" : tick.Prefix;
                         tickStrings.Add($"{tick.Field} {tPrefix}{tValStr}{tick.Suffix}");
@@ -378,8 +399,108 @@ namespace TooltipFixMod
     public class ContainerMaxDosesEntry { [XmlAttribute("Keyword")] public string Keyword; [XmlAttribute("Method")] public string Method; [XmlAttribute("MaxDose")] public double MaxDose; }
     public class LiquidEntry { [XmlAttribute("Name")] public string Name; public UsageMethodEntry Oral; public UsageMethodEntry Injection; public UsageMethodEntry Topical; [XmlArray("DosePrompts"), XmlArrayItem("DosePrompt")] public List<DosePromptEntry> DosePrompts = new List<DosePromptEntry>(); }
     public class UsageMethodEntry { [XmlArray("Stats"), XmlArrayItem("Stat")] public List<StatEntry> Stats = new List<StatEntry>(); [XmlArray("Specials"), XmlArrayItem("Special")] public List<string> Specials = new List<string>(); [XmlArray("Buffs"), XmlArrayItem("Buff")] public List<BuffEntry> Buffs = new List<BuffEntry>(); }
-    public class StatEntry { [XmlAttribute] public string Field; [XmlAttribute] public double ValuePerML; [XmlAttribute] public string ValueColor = "#FFFFFF"; [XmlAttribute] public string Prefix = ""; [XmlAttribute] public string Suffix = ""; }
-    public class BuffEntry { [XmlAttribute] public string Name; [XmlAttribute] public string NameColor = "#b7b7b7"; [XmlAttribute] public string ValueColor = "#00FF00"; [XmlAttribute] public string StackMode = "Duration"; [XmlAttribute] public double BaseDuration; [XmlAttribute] public double DurationPerML; [XmlArray("TickStats"), XmlArrayItem("TickStat")] public List<StatEntry> TickStats = new List<StatEntry>(); }
+
+    // ======== 核心修改：支持复杂函数规则 ========
+    public class StatRule
+    {
+        [XmlAttribute] public double MinML = 0;
+        [XmlAttribute] public double MaxML = 999999;
+        [XmlAttribute] public string Mode = "Linear"; // 模式: "Linear" (线性) 或 "Inverse" (反比)
+        [XmlAttribute] public double BaseValue = 0; // 该区间的固定基础值
+        [XmlAttribute] public double Multiplier = 0; // 线性乘区 或 反比系数
+        [XmlAttribute] public bool UseMaxLimit = false; // 是否启用最大值限制
+        [XmlAttribute] public double MaxLimit = 0;
+        [XmlAttribute] public bool UseMinLimit = false; // 是否启用最小值限制
+        [XmlAttribute] public double MinLimit = 0;
+    }
+
+    public class StatEntry
+    {
+        [XmlAttribute] public string Field;
+        [XmlAttribute] public double BaseValue = 0;  // 每次使用固定的数值
+        [XmlAttribute] public double ValuePerML = 0; // 每ML增加的数值(原有逻辑)
+        [XmlAttribute] public string ValueColor = "#FFFFFF";
+        [XmlAttribute] public string Prefix = "";
+        [XmlAttribute] public string Suffix = "";
+
+        [XmlElement("Rule")]
+        public List<StatRule> Rules = new List<StatRule>(); // 复杂条件与函数支持
+
+        public double Calculate(double x)
+        {
+            if (Rules != null && Rules.Count > 0)
+            {
+                foreach (var rule in Rules)
+                {
+                    if (x >= rule.MinML && x <= rule.MaxML)
+                    {
+                        double val = rule.BaseValue;
+                        if (rule.Mode != null && rule.Mode.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
+                        {
+                            double denom = (x == 0) ? 0.0001 : x; // 防止除0错误
+                            val += (rule.Multiplier / denom);
+                        }
+                        else // Linear
+                        {
+                            val += (rule.Multiplier * x);
+                        }
+
+                        if (rule.UseMaxLimit) val = Math.Min(val, rule.MaxLimit);
+                        if (rule.UseMinLimit) val = Math.Max(val, rule.MinLimit);
+                        return val;
+                    }
+                }
+            }
+            // 如果没有匹配的Rule或没有写Rule，退回基础固定值+每ML成长值
+            return BaseValue + (ValuePerML * x);
+        }
+    }
+
+    public class BuffEntry
+    {
+        [XmlAttribute] public string Name;
+        [XmlAttribute] public string NameColor = "#b7b7b7";
+        [XmlAttribute] public string ValueColor = "#00FF00";
+        [XmlAttribute] public string StackMode = "Duration";
+        [XmlAttribute] public double BaseDuration = 0; // 固定的持续时间
+        [XmlAttribute] public double DurationPerML = 0; // 每ML增加的时间
+
+        [XmlElement("DurationRule")]
+        public List<StatRule> DurationRules = new List<StatRule>();
+
+        [XmlArray("TickStats"), XmlArrayItem("TickStat")]
+        public List<StatEntry> TickStats = new List<StatEntry>();
+
+        public double CalculateDuration(double x)
+        {
+            if (DurationRules != null && DurationRules.Count > 0)
+            {
+                foreach (var rule in DurationRules)
+                {
+                    if (x >= rule.MinML && x <= rule.MaxML)
+                    {
+                        double val = rule.BaseValue;
+                        if (rule.Mode != null && rule.Mode.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
+                        {
+                            double denom = (x == 0) ? 0.0001 : x;
+                            val += (rule.Multiplier / denom);
+                        }
+                        else
+                        {
+                            val += (rule.Multiplier * x);
+                        }
+
+                        if (rule.UseMaxLimit) val = Math.Min(val, rule.MaxLimit);
+                        if (rule.UseMinLimit) val = Math.Max(val, rule.MinLimit);
+                        return val;
+                    }
+                }
+            }
+            return BaseDuration + (DurationPerML * x);
+        }
+    }
+    // ===========================================
+
     public class DosePromptEntry { [XmlAttribute] public double Threshold; [XmlAttribute] public string Message; }
     public class EffectPromptEntry { [XmlAttribute] public string Field; [XmlAttribute] public double Threshold; [XmlAttribute] public string Message; }
 
