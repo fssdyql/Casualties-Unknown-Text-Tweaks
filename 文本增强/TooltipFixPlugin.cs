@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq; 
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
@@ -11,7 +12,7 @@ using UnityEngine;
 
 namespace TooltipFixMod
 {
-    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.1")]
+    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.2")]
     public class TooltipFixPlugin : BaseUnityPlugin
     {
         public static string ConfigPath;
@@ -21,7 +22,7 @@ namespace TooltipFixMod
             ConfigPath = Path.Combine(Application.dataPath, "Lang", "LiquidEffects.xml");
             LiquidEffectManager.LoadConfig();
             Harmony.CreateAndPatchAll(typeof(UIUtilPatch));
-            Logger.LogInfo($"TooltipFixMod v1.7.0 Loaded - Dynamic Layout Enabled!");
+            Logger.LogInfo($"TooltipFixMod v0.1.2 ...?");
         }
     }
 
@@ -40,8 +41,11 @@ namespace TooltipFixMod
 
         private static List<LiquidSection> cachedLiquids = new List<LiquidSection>();
         private static string cachedContainerHeader = "";
-        private static List<string> activeOverviewModes = new List<string>(); // 存储当前可用的概览模式
-        private static bool useSplitOverview = false; // 是否因高度溢出而启用分页面板
+        private static List<string> activeOverviewModes = new List<string>();
+        private static bool useSplitOverview = false;
+        private static bool useLiquidListPage = false; 
+
+        private static string lastLiquidStructure = "";
 
         [HarmonyPostfix]
         public static void Postfix(ref ValueTuple<string, string> __result)
@@ -65,12 +69,29 @@ namespace TooltipFixMod
                 lastRawInputName = rawName;
                 ParseLiquids(rawDesc, out cachedLiquids, out cachedContainerHeader);
                 EvaluateOverviewStrategy(rawName);
+
+                StringBuilder structSb = new StringBuilder(rawName);
+                foreach (var l in cachedLiquids) structSb.Append("_").Append(l.Name);
+                string currentStructure = structSb.ToString();
+
+                if (currentStructure != lastLiquidStructure)
+                {
+                    lastLiquidStructure = currentStructure;
+                    int newMinPage = 0;
+                    if (activeOverviewModes.Count > 0)
+                    {
+                        newMinPage = useSplitOverview ? -activeOverviewModes.Count : -1;
+                        if (useLiquidListPage) newMinPage = -activeOverviewModes.Count - 1;
+                    }
+                    currentPageIndex = newMinPage;
+                }
             }
 
             int minPage = 0;
             if (activeOverviewModes.Count > 0)
             {
                 minPage = useSplitOverview ? -activeOverviewModes.Count : -1;
+                if (useLiquidListPage) minPage = -activeOverviewModes.Count - 1;
             }
 
             if (!isShiftHeld)
@@ -167,6 +188,7 @@ namespace TooltipFixMod
         {
             activeOverviewModes.Clear();
             useSplitOverview = false;
+            useLiquidListPage = false;
 
             bool hasOral = false;
             bool hasInj = false;
@@ -186,18 +208,35 @@ namespace TooltipFixMod
             if (hasInj) activeOverviewModes.Add("Injection");
             if (hasTop) activeOverviewModes.Add("Topical");
 
-            // 当存在复数种预估方式时，评估是否需要进行分页处理
-            if (activeOverviewModes.Count > 1)
+            int safeLineLimit = Mathf.Max(12, (int)(Screen.height * 0.70f / 22f));
+
+            if (activeOverviewModes.Count > 0)
             {
                 string combinedText = BuildFullCombinedText(cachedLiquids, cachedContainerHeader, containerName);
                 int lines = GetLineCount(combinedText);
 
-                // 根据当前屏幕高度预估安全显示的最高行数（假设单行占用约22像素，利用高比例折算安全边界）
-                int safeLineLimit = Mathf.Max(12, (int)(Screen.height * 0.70f / 22f));
-
                 if (lines > safeLineLimit)
                 {
                     useSplitOverview = true;
+                }
+            }
+
+            if (useSplitOverview)
+            {
+                int listLines = GetLineCount(cachedContainerHeader.TrimEnd()) + cachedLiquids.Count;
+                int footerLines = 3 + activeOverviewModes.Count; 
+
+                foreach (var mode in activeOverviewModes)
+                {
+                    string merged = CalculateSingleMergedEffect(cachedLiquids, containerName, mode);
+                    int mergedLines = GetLineCount(merged);
+
+                    int totalExpectedLines = listLines + 1 + mergedLines + footerLines;
+                    if (totalExpectedLines > safeLineLimit)
+                    {
+                        useLiquidListPage = true;
+                        break;
+                    }
                 }
             }
         }
@@ -236,39 +275,82 @@ namespace TooltipFixMod
             {
                 if (useSplitOverview)
                 {
-                    // 使用分页模式显示
-                    sb.AppendLine(containerHeader.TrimEnd());
-                    foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
+                    bool isLiquidListPage = useLiquidListPage && (pageIndex == -activeOverviewModes.Count - 1);
 
-                    int overviewIdx = pageIndex + activeOverviewModes.Count;
-                    if (overviewIdx >= 0 && overviewIdx < activeOverviewModes.Count)
+                    if (isLiquidListPage)
                     {
-                        string mode = activeOverviewModes[overviewIdx];
+                        sb.AppendLine(containerHeader.TrimEnd());
+                        foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
+
                         sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                        string mergedEffectString = CalculateSingleMergedEffect(liquids, containerName, mode);
-                        if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString);
+                        sb.AppendLine("<color=#888888><size=80%> 容器包含多种液体，此处仅显示成分列表。</size></color>");
+                        sb.AppendLine("<color=#888888><size=80%> 请滚动鼠标滚轮翻页查看各模式下的预估效果。</size></color>");
+                        sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                        sb.AppendLine($"<color=#888888><size=80%>[ 概览 1 / {activeOverviewModes.Count + 1} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
+                        sb.AppendLine("<color=#666666> ────────────────────</color>");
+                        sb.AppendLine($"<color=#00FFFF>▶ 【成分列表】</color>");
+                        for (int i = 0; i < activeOverviewModes.Count; i++)
+                        {
+                            string mName = GetChineseModeName(activeOverviewModes[i]);
+                            sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
+                        }
                     }
-
-                    sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                    sb.AppendLine($"<color=#888888><size=80%>[ 概览 {overviewIdx + 1} / {activeOverviewModes.Count} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
-                    sb.AppendLine("<color=#666666> ────────────────────</color>");
-                    for (int i = 0; i < activeOverviewModes.Count; i++)
+                    else
                     {
-                        string mName = GetChineseModeName(activeOverviewModes[i]);
-                        int targetPage = i - activeOverviewModes.Count;
-                        if (targetPage == pageIndex) sb.AppendLine($"<color=#00FFFF>▶ 【{mName}预估】</color>");
-                        else sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
+                        sb.AppendLine(containerHeader.TrimEnd());
+
+                        if (!useLiquidListPage)
+                        {
+                            foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
+                        }
+                        
+                        int overviewIdx = pageIndex + activeOverviewModes.Count;
+                        if (overviewIdx >= 0 && overviewIdx < activeOverviewModes.Count)
+                        {
+                            string mode = activeOverviewModes[overviewIdx];
+                            sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                            string mergedEffectString = CalculateSingleMergedEffect(liquids, containerName, mode);
+                            if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString);
+                        }
+
+                        sb.AppendLine("<color=#555555>──────────────────────────</color>");
+
+                        if (useLiquidListPage)
+                        {
+                            int totalPages = activeOverviewModes.Count + 1;
+                            int currentPageNum = overviewIdx + 2; 
+                            sb.AppendLine($"<color=#888888><size=80%>[ 概览 {currentPageNum} / {totalPages} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
+                            sb.AppendLine("<color=#666666> ────────────────────</color>");
+                            sb.AppendLine($"  <color=#888888>【成分列表】</color>");
+                            for (int i = 0; i < activeOverviewModes.Count; i++)
+                            {
+                                string mName = GetChineseModeName(activeOverviewModes[i]);
+                                int targetPage = i - activeOverviewModes.Count;
+                                if (targetPage == pageIndex) sb.AppendLine($"<color=#00FFFF>▶ 【{mName}预估】</color>");
+                                else sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine($"<color=#888888><size=80%>[ 概览 {overviewIdx + 1} / {activeOverviewModes.Count} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
+                            sb.AppendLine("<color=#666666> ────────────────────</color>");
+                            for (int i = 0; i < activeOverviewModes.Count; i++)
+                            {
+                                string mName = GetChineseModeName(activeOverviewModes[i]);
+                                int targetPage = i - activeOverviewModes.Count;
+                                if (targetPage == pageIndex) sb.AppendLine($"<color=#00FFFF>▶ 【{mName}预估】</color>");
+                                else sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
+                            }
+                        }
                     }
                 }
                 else
                 {
-                    // 未超出时，单页合并显示
                     sb.Append(BuildFullCombinedText(liquids, containerHeader, containerName));
                 }
             }
             else
             {
-                // 成分详情页
                 sb.AppendLine(containerHeader.TrimEnd());
                 var currentLiq = liquids[pageIndex];
                 sb.AppendLine($"<color=#FFFFFF><b>{currentLiq.headerLine}</b></color>");
@@ -507,7 +589,8 @@ namespace TooltipFixMod
         {
             var totalStats = new Dictionary<string, (double TotalVal, string Color, string Prefix, string Suffix)>();
             var specialEffects = new HashSet<string>();
-            var totalBuffs = new Dictionary<string, (double Duration, double TickMultiplier, BuffEntry RefDef)>();
+
+            var totalBuffs = new Dictionary<string, (double Duration, double TickMultiplier, BuffEntry RefDef, string DisplayName)>();
 
             double totalVolume = 0;
             foreach (var liq in liquids) totalVolume += liq.AmountML;
@@ -554,10 +637,14 @@ namespace TooltipFixMod
                         {
                             if (string.IsNullOrEmpty(buff.Name)) continue;
 
-                            bool isFirstInit = !totalBuffs.ContainsKey(buff.Name);
-                            if (isFirstInit) totalBuffs[buff.Name] = (0, 0, buff);
+                            string buffKey = $"{liq.Name}_{buff.Name}";
+                            bool isFirstInit = !totalBuffs.ContainsKey(buffKey);
 
-                            var current = totalBuffs[buff.Name];
+                            string displayName = liquids.Count > 1 ? $"[{liq.Name}] {buff.Name}" : buff.Name;
+
+                            if (isFirstInit) totalBuffs[buffKey] = (0, 0, buff, displayName);
+
+                            var current = totalBuffs[buffKey];
                             double addedDuration = 0, addedTickMulti = 0;
                             string mode = buff.StackMode?.ToUpper() ?? "DURATION";
 
@@ -579,7 +666,7 @@ namespace TooltipFixMod
                                 addedTickMulti = effectiveML;
                             }
 
-                            totalBuffs[buff.Name] = (current.Duration + addedDuration, current.TickMultiplier + addedTickMulti, buff);
+                            totalBuffs[buffKey] = (current.Duration + addedDuration, current.TickMultiplier + addedTickMulti, buff, current.DisplayName);
                         }
                     }
                 }
@@ -600,6 +687,7 @@ namespace TooltipFixMod
                 var dur = Math.Round(kvp.Value.Duration, 1).ToString("0.#");
                 var buffDef = kvp.Value.RefDef;
                 var multiplier = kvp.Value.TickMultiplier;
+                var displayName = kvp.Value.DisplayName;
 
                 List<string> tickStrings = new List<string>();
                 if (buffDef.TickStats != null)
@@ -620,7 +708,7 @@ namespace TooltipFixMod
                 string tickJoined = string.Join(" | ", tickStrings);
                 string nColor = string.IsNullOrEmpty(buffDef.NameColor) ? "#b7b7b7" : buffDef.NameColor;
                 string vColor = string.IsNullOrEmpty(buffDef.ValueColor) ? "#00FF00" : buffDef.ValueColor;
-                mainSb.AppendLine($"  <color={nColor}>{buffDef.Name}</color> <color={vColor}>持续 {dur}秒 每一秒：{tickJoined}</color>");
+                mainSb.AppendLine($"  <color={nColor}>{displayName}</color> <color={vColor}>持续 {dur}秒 每一秒：{tickJoined}</color>");
             }
             foreach (var sp in specialEffects) mainSb.AppendLine($"  {sp}");
             return true;
