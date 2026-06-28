@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -10,7 +11,7 @@ using UnityEngine;
 
 namespace TooltipFixMod
 {
-    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.0")]
+    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.1")]
     public class TooltipFixPlugin : BaseUnityPlugin
     {
         public static string ConfigPath;
@@ -20,7 +21,7 @@ namespace TooltipFixMod
             ConfigPath = Path.Combine(Application.dataPath, "Lang", "LiquidEffects.xml");
             LiquidEffectManager.LoadConfig();
             Harmony.CreateAndPatchAll(typeof(UIUtilPatch));
-            Logger.LogInfo($"TooltipFixMod v1.6.12 Loaded - Custom Math Rules Enabled!");
+            Logger.LogInfo($"TooltipFixMod v0.1.1 Loaded");
         }
     }
 
@@ -187,6 +188,21 @@ namespace TooltipFixMod
             return sb.ToString();
         }
 
+        private static bool EvaluateCondition(double val, string op, double target)
+        {
+            switch (op)
+            {
+                case ">": return val > target;
+                case ">=": return val >= target;
+                case "<": return val < target;
+                case "<=": return val <= target;
+                case "==":
+                case "=": return Math.Abs(val - target) < 0.0001;
+                case "!=": return Math.Abs(val - target) > 0.0001;
+                default: return false;
+            }
+        }
+
         private static string CalculateMergedEffects(List<LiquidSection> liquids, string containerName)
         {
             if (liquids == null || liquids.Count == 0) return "";
@@ -228,8 +244,26 @@ namespace TooltipFixMod
                         double intakeML = liq.AmountML * maxConsumeRatio;
                         foreach (var dp in liquidData.DosePrompts)
                         {
-                            if (intakeML >= dp.Threshold)
-                                promptSb.AppendLine($"  <color=#FF5555>• [{liq.Name}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {dp.Message}</color>");
+                            double currentThreshold = dp.Threshold;
+                            string currentMessage = dp.Message;
+
+                            if (dp.Interactions != null)
+                            {
+                                foreach (var inter in dp.Interactions)
+                                {
+                                    double condVal = grandMaxStats.ContainsKey(inter.ConditionStat) ? grandMaxStats[inter.ConditionStat] : 0;
+                                    if (EvaluateCondition(condVal, inter.Operator, inter.ConditionValue))
+                                    {
+                                        if (!string.IsNullOrEmpty(inter.Formula))
+                                            currentThreshold = MathEvaluator.Evaluate(inter.Formula, currentThreshold, intakeML, grandMaxStats);
+                                        if (!string.IsNullOrEmpty(inter.CustomMessage))
+                                            currentMessage = inter.CustomMessage;
+                                    }
+                                }
+                            }
+
+                            if (intakeML > 0 && intakeML >= currentThreshold)
+                                promptSb.AppendLine($"  <color=#FF5555>• [{liq.Name}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {currentMessage}</color>");
                         }
                     }
                 }
@@ -239,8 +273,27 @@ namespace TooltipFixMod
             {
                 foreach (var ep in LiquidEffectManager.GlobalEffectPrompts)
                 {
-                    if (grandMaxStats.TryGetValue(ep.Field, out double maxVal) && maxVal >= ep.Threshold)
-                        promptSb.AppendLine($"  <color=#FF5555>• {ep.Field}单次最高预估达到 {Math.Round(maxVal, 2)}: {ep.Message}</color>");
+                    double maxVal = grandMaxStats.ContainsKey(ep.Field) ? grandMaxStats[ep.Field] : 0;
+                    double currentThreshold = ep.Threshold;
+                    string currentMessage = ep.Message;
+
+                    if (ep.Interactions != null)
+                    {
+                        foreach (var inter in ep.Interactions)
+                        {
+                            double condVal = grandMaxStats.ContainsKey(inter.ConditionStat) ? grandMaxStats[inter.ConditionStat] : 0;
+                            if (EvaluateCondition(condVal, inter.Operator, inter.ConditionValue))
+                            {
+                                if (!string.IsNullOrEmpty(inter.Formula))
+                                    currentThreshold = MathEvaluator.Evaluate(inter.Formula, currentThreshold, maxVal, grandMaxStats);
+                                if (!string.IsNullOrEmpty(inter.CustomMessage))
+                                    currentMessage = inter.CustomMessage;
+                            }
+                        }
+                    }
+
+                    if (maxVal > 0 && maxVal >= currentThreshold)
+                        promptSb.AppendLine($"  <color=#FF5555>• {ep.Field}单次最高预估达到 {Math.Round(maxVal, 2)}: {currentMessage}</color>");
                 }
             }
 
@@ -391,36 +444,140 @@ namespace TooltipFixMod
         }
     }
 
+    public class MathEvaluator
+    {
+        private int pos = -1;
+        private int ch;
+        private string str;
+
+        public static double Evaluate(string formula, double x, double ml, Dictionary<string, double> contextStats)
+        {
+            try
+            {
+                string exp = formula.Replace("x", x.ToString(CultureInfo.InvariantCulture))
+                                    .Replace("ML", ml.ToString(CultureInfo.InvariantCulture));
+
+                exp = Regex.Replace(exp, @"\[(.*?)\]", match => {
+                    string key = match.Groups[1].Value;
+                    double val = contextStats.ContainsKey(key) ? contextStats[key] : 0;
+                    return val.ToString(CultureInfo.InvariantCulture);
+                });
+
+                exp = exp.Replace(" ", "");
+                return new MathEvaluator().Parse(exp);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("[TooltipFix] Formula Evaluation Error: " + ex.Message + " in formula: " + formula);
+                return x;  
+            }
+        }
+
+        private void NextChar() { ch = (++pos < str.Length) ? str[pos] : -1; }
+        private bool Eat(int charToEat)
+        {
+            while (ch == ' ') NextChar();
+            if (ch == charToEat) { NextChar(); return true; }
+            return false;
+        }
+
+        private double Parse(string s)
+        {
+            str = s; pos = -1; NextChar();
+            double x = ParseExpression();
+            if (pos < str.Length) throw new Exception("Unexpected character: " + (char)ch);
+            return x;
+        }
+
+        private double ParseExpression()
+        {
+            double x = ParseTerm();
+            for (; ; )
+            {
+                if (Eat('+')) x += ParseTerm();
+                else if (Eat('-')) x -= ParseTerm();
+                else return x;
+            }
+        }
+
+        private double ParseTerm()
+        {
+            double x = ParseFactor();
+            for (; ; )
+            {
+                if (Eat('*')) x *= ParseFactor();
+                else if (Eat('/')) x /= ParseFactor();
+                else return x;
+            }
+        }
+
+        private double ParseFactor()
+        {
+            if (Eat('+')) return ParseFactor();
+            if (Eat('-')) return -ParseFactor();
+
+            double x;
+            int startPos = this.pos;
+
+            if (Eat('('))
+            {
+                x = ParseExpression();
+                Eat(')');
+            }
+            else if ((ch >= '0' && ch <= '9') || ch == '.')
+            {
+                while ((ch >= '0' && ch <= '9') || ch == '.') NextChar();
+                x = double.Parse(str.Substring(startPos, this.pos - startPos), CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                throw new Exception("Unexpected character: " + (char)ch);
+            }
+            return x;
+        }
+    }
+
+
     [XmlRoot("LiquidEffects")]
     public class LiquidEffectsRoot { [XmlElement("Liquid")] public List<LiquidEntry> Liquids = new List<LiquidEntry>(); [XmlArray("GlobalEffectPrompts"), XmlArrayItem("EffectPrompt")] public List<EffectPromptEntry> GlobalEffectPrompts = new List<EffectPromptEntry>(); [XmlArray("ContainerMaxDoses"), XmlArrayItem("ContainerMaxDose")] public List<ContainerMaxDosesEntry> ContainerMaxDoses = new List<ContainerMaxDosesEntry>(); }
     public class ContainerMaxDosesEntry { [XmlAttribute("Keyword")] public string Keyword; [XmlAttribute("Method")] public string Method; [XmlAttribute("MaxDose")] public double MaxDose; }
     public class LiquidEntry { [XmlAttribute("Name")] public string Name; public UsageMethodEntry Oral; public UsageMethodEntry Injection; public UsageMethodEntry Topical; [XmlArray("DosePrompts"), XmlArrayItem("DosePrompt")] public List<DosePromptEntry> DosePrompts = new List<DosePromptEntry>(); }
     public class UsageMethodEntry { [XmlArray("Stats"), XmlArrayItem("Stat")] public List<StatEntry> Stats = new List<StatEntry>(); [XmlArray("Specials"), XmlArrayItem("Special")] public List<string> Specials = new List<string>(); [XmlArray("Buffs"), XmlArrayItem("Buff")] public List<BuffEntry> Buffs = new List<BuffEntry>(); }
 
+    public class InteractionRule
+    {
+        [XmlAttribute] public string ConditionStat = "";  
+        [XmlAttribute] public string Operator = ">";       
+        [XmlAttribute] public double ConditionValue = 0;   
+
+        [XmlAttribute] public string Formula = "";
+        [XmlAttribute] public string CustomMessage = ""; 
+    }
+
     public class StatRule
     {
         [XmlAttribute] public double MinML = 0;
         [XmlAttribute] public double MaxML = 999999;
-        [XmlAttribute] public string Mode = "Linear"; 
-        [XmlAttribute] public double BaseValue = 0; 
-        [XmlAttribute] public double Multiplier = 0; 
-        [XmlAttribute] public bool UseMaxLimit = false; 
+        [XmlAttribute] public string Mode = "Linear";
+        [XmlAttribute] public double BaseValue = 0;
+        [XmlAttribute] public double Multiplier = 0;
+        [XmlAttribute] public bool UseMaxLimit = false;
         [XmlAttribute] public double MaxLimit = 0;
-        [XmlAttribute] public bool UseMinLimit = false; 
+        [XmlAttribute] public bool UseMinLimit = false;
         [XmlAttribute] public double MinLimit = 0;
     }
 
     public class StatEntry
     {
         [XmlAttribute] public string Field;
-        [XmlAttribute] public double BaseValue = 0;  
-        [XmlAttribute] public double ValuePerML = 0; 
+        [XmlAttribute] public double BaseValue = 0;
+        [XmlAttribute] public double ValuePerML = 0;
         [XmlAttribute] public string ValueColor = "#FFFFFF";
         [XmlAttribute] public string Prefix = "";
         [XmlAttribute] public string Suffix = "";
 
         [XmlElement("Rule")]
-        public List<StatRule> Rules = new List<StatRule>(); 
+        public List<StatRule> Rules = new List<StatRule>();
 
         public double Calculate(double x)
         {
@@ -433,10 +590,10 @@ namespace TooltipFixMod
                         double val = rule.BaseValue;
                         if (rule.Mode != null && rule.Mode.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
                         {
-                            double denom = (x == 0) ? 0.0001 : x; 
+                            double denom = (x == 0) ? 0.0001 : x;
                             val += (rule.Multiplier / denom);
                         }
-                        else 
+                        else
                         {
                             val += (rule.Multiplier * x);
                         }
@@ -457,8 +614,8 @@ namespace TooltipFixMod
         [XmlAttribute] public string NameColor = "#b7b7b7";
         [XmlAttribute] public string ValueColor = "#00FF00";
         [XmlAttribute] public string StackMode = "Duration";
-        [XmlAttribute] public double BaseDuration = 0; 
-        [XmlAttribute] public double DurationPerML = 0; 
+        [XmlAttribute] public double BaseDuration = 0;
+        [XmlAttribute] public double DurationPerML = 0;
 
         [XmlElement("DurationRule")]
         public List<StatRule> DurationRules = new List<StatRule>();
@@ -495,8 +652,20 @@ namespace TooltipFixMod
         }
     }
 
-    public class DosePromptEntry { [XmlAttribute] public double Threshold; [XmlAttribute] public string Message; }
-    public class EffectPromptEntry { [XmlAttribute] public string Field; [XmlAttribute] public double Threshold; [XmlAttribute] public string Message; }
+    public class DosePromptEntry
+    {
+        [XmlAttribute] public double Threshold;
+        [XmlAttribute] public string Message;
+        [XmlElement("Interaction")] public List<InteractionRule> Interactions = new List<InteractionRule>();
+    }
+
+    public class EffectPromptEntry
+    {
+        [XmlAttribute] public string Field;
+        [XmlAttribute] public double Threshold;
+        [XmlAttribute] public string Message;
+        [XmlElement("Interaction")] public List<InteractionRule> Interactions = new List<InteractionRule>();
+    }
 
     public static class LiquidEffectManager
     {
