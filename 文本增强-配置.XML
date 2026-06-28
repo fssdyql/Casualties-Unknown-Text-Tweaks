@@ -40,8 +40,8 @@
       </Stats>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="80.0" Message="超过静脉注射安全剂量(80ml)，有导致呼吸骤停的极高风险！" />
-      <DosePrompt Threshold="180.0" Message="超过口服安全剂量(180ml)，有极高风险！" />
+      <DosePrompt Threshold="80.0" Message="超过静脉注射安全剂量(80ml)，有导致呼吸骤停的极高风险" />
+      <DosePrompt Threshold="180.0" Message="超过口服安全剂量(180ml)，有极高风险" />
     </DosePrompts>
   </Liquid>
 
@@ -49,7 +49,6 @@
     <Oral>
       <Stats>
         <Stat Field="头部消毒" ValueColor="#00FF00" Suffix="秒">
-          <!-- Mathf.Clamp01(ml * 0.01f) * 200f (100ml时达到最大值200) -->
           <Rule Mode="Linear" Multiplier="2.0" UseMaxLimit="true" MaxLimit="200" />
         </Stat>
         <Stat Field="情绪" ValuePerML="-0.1" ValueColor="#FF0000" />
@@ -87,8 +86,8 @@
       </Stats>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="180.0" Message="超过静脉注射安全剂量(180ml)！" />
-      <DosePrompt Threshold="360.0" Message="超过口服安全剂量(360ml)！" />
+      <DosePrompt Threshold="180.0" Message="超过静脉注射安全剂量(180ml)" />
+      <DosePrompt Threshold="360.0" Message="超过口服安全剂量(360ml)" />
     </DosePrompts>
   </Liquid>
 
@@ -99,7 +98,7 @@
       </Stats>
     </Oral>
     <DosePrompts>
-      <DosePrompt Threshold="60.0" Message="超过推荐剂量(60ml)！" />
+      <DosePrompt Threshold="60.0" Message="超过推荐剂量(60ml)" />
     </DosePrompts>
   </Liquid>
 
@@ -117,8 +116,8 @@
       </Stats>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="55.0" Message="超过静脉注射安全剂量(55ml)！" />
-      <DosePrompt Threshold="120.0" Message="超过口服安全剂量(120ml)！" />
+      <DosePrompt Threshold="55.0" Message="超过静脉注射安全剂量(55ml)" />
+      <DosePrompt Threshold="120.0" Message="超过口服安全剂量(120ml)" />
     </DosePrompts>
   </Liquid>
 
@@ -171,7 +170,7 @@
       </Stats>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="1.5" Message="极易过量！安全剂量 &lt; 1.5ml！" />
+      <DosePrompt Threshold="1.5" Message="极易过量！安全剂量 &lt; 1.5ml" />
     </DosePrompts>
   </Liquid>
 
@@ -246,8 +245,8 @@
       </Buffs>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="130.0" Message="静脉注射超量风险，可能触发严重过量反应！" />
-      <DosePrompt Threshold="160.0" Message="口服超量风险，可能触发严重过量反应！" />
+      <DosePrompt Threshold="130.0" Message="静脉注射超量风险，可能触发严重过量反应" />
+      <DosePrompt Threshold="160.0" Message="口服超量风险，可能触发严重过量反应" />
     </DosePrompts>
   </Liquid>
 
@@ -281,7 +280,7 @@
       </Buffs>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="60.0" Message="静脉注射超过安全剂量(60ml)，极易触发致命过量反应！" />
+      <DosePrompt Threshold="60.0" Message="静脉注射超过安全剂量(60ml)，极易触发致命过量反应" />
     </DosePrompts>
   </Liquid>
 
@@ -328,8 +327,8 @@
       </Buffs>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="45.0" Message="静脉注射超过安全剂量(45ml)，极易触发严重过量反应！" />
-      <DosePrompt Threshold="60.0" Message="口服超过安全剂量(60ml)，极易触发严重过量反应！" />
+      <DosePrompt Threshold="45.0" Message="静脉注射超过安全剂量(45ml)，极易触发严重过量反应" />
+      <DosePrompt Threshold="60.0" Message="口服超过安全剂量(60ml)，极易触发严重过量反应" />
     </DosePrompts>
   </Liquid>
 
@@ -667,7 +666,6 @@
       <Stats>
         <Stat Field="皮肤愈合" ValuePerML="0.3" ValueColor="#00FF00" />
         <Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
-          <!-- 300f * Mathf.Clamp01(ml * 0.1) -->
           <Rule Mode="Linear" Multiplier="30.0" UseMaxLimit="true" MaxLimit="300" />
         </Stat>
       </Stats>
@@ -698,7 +696,6 @@
         <Stat Field="感染" ValuePerML="-0.25" ValueColor="#00FF00" />
         <Stat Field="恶心" ValuePerML="0.125" ValueColor="#FF0000" />
         <Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
-          <!-- 300f * Mathf.Clamp01(ml / 20f) 修正了之前的错误系数 -->
           <Rule Mode="Linear" Multiplier="15.0" UseMaxLimit="true" MaxLimit="300" />
         </Stat>
         <Stat Field="血液粘度" ValueColor="#FF0000">
@@ -750,9 +747,12 @@
         <Stat Field="药效剂量" ValuePerML="5.0" ValueColor="#00FF00" />
       </Stats>
       <Specials>
-        <Special>&lt;color=#ffaa00&gt;30%概率引起呕吐, 药效期间平抑60%情绪起伏。过量剂量250(引发血压骤降)。&lt;/color&gt;</Special>
+        <Special>&lt;color=#ffaa00&gt;30%概率引起呕吐, 药效期间平抑60%情绪起伏。&lt;/color&gt;</Special>
       </Specials>
     </Oral>
+	  <DosePrompts>
+		  <DosePrompt Threshold="50.0" Message="单次口服超过 50ml(剂量>250)，极易引发致命性血压骤降" />
+	  </DosePrompts>
   </Liquid>
 
   <Liquid Name="抗生素">
@@ -836,13 +836,12 @@
       <Stats>
         <Stat Field="药效剂量" ValuePerML="60.0" ValueColor="#00FF00" />
       </Stats>
-      <Specials>
-        <Special>&lt;color=#ffaa00&gt;安全剂量：体内药效超过 900 将会造成过量，过量极其危险！&lt;/color&gt;</Special>
-      </Specials>
     </Oral>
-    <DosePrompts>
-      <DosePrompt Threshold="15.0" Message="剂量达到 15ml (药效900) ,将触发过量" />
-    </DosePrompts>
+	  <DosePrompts>
+		  <DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停,昏迷时更严重">
+			  <Interaction ConditionStat="阿片受体" Operator=">" ConditionValue="15.0" Formula="2.5" CustomMessage="药物相互作用,安眠药安全剂量暴跌至 2.5ml " />
+		  </DosePrompt>
+	  </DosePrompts>
   </Liquid>
 
   <Liquid Name="促凝剂">
@@ -903,7 +902,7 @@
       </Buffs>
     </Injection>
     <DosePrompts>
-      <DosePrompt Threshold="40.0" Message="超过安全剂量(40ml)，将导致严重心律失常！" />
+      <DosePrompt Threshold="40.0" Message="超过安全剂量(40ml)，将导致严重心律失常" />
     </DosePrompts>
   </Liquid>
 
@@ -1098,7 +1097,6 @@
     </Oral>
     <Topical>
       <Stats>
-        <!-- 源码为 ml/10f，之前完全算错了，正确的乘数是24.0 -->
         <Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
           <Rule Mode="Linear" Multiplier="24.0" UseMaxLimit="true" MaxLimit="240" />
         </Stat>
@@ -1226,7 +1224,6 @@
     </Oral>
   </Liquid>
 
-  <!-- 全局危险阈值警报 -->
   <GlobalEffectPrompts>
     <EffectPrompt Field="阿片受体" Threshold="100.0" Message="体内阿片受体急速升高，有极高概率引发严重过量" />
     <EffectPrompt Field="恶心" Threshold="60.0" Message="该剂量极易引发剧烈呕吐" />
@@ -1234,21 +1231,18 @@
   </GlobalEffectPrompts>
 
   <ContainerMaxDoses>
-    <!-- 外敷容器限制 -->
     <ContainerMaxDose Keyword="喷雾" Method="外敷" MaxDose="10.0" />
     <ContainerMaxDose Keyword="消毒剂瓶" Method="外敷" MaxDose="10.0" />
     <ContainerMaxDose Keyword="镇痛膏" Method="外敷" MaxDose="10.0" />
     <ContainerMaxDose Keyword="伤口粘合" Method="外敷" MaxDose="20.0" />
     <ContainerMaxDose Keyword="药瓶" Method="外敷" MaxDose="10.0" />
 
-    <!-- 注射容器限制 -->
     <ContainerMaxDose Keyword="促凝剂" Method="静脉注射" MaxDose="34.0" />
     <ContainerMaxDose Keyword="链激酶" Method="静脉注射" MaxDose="34.0" />
     <ContainerMaxDose Keyword="抗血清" Method="静脉注射" MaxDose="50.0" />
     <ContainerMaxDose Keyword="血袋" Method="静脉注射" MaxDose="375.0" />
     <ContainerMaxDose Keyword="自动注射" Method="静脉注射" MaxDose="2.0" />
 
-    <!-- 口服容器限制 -->
     <ContainerMaxDose Keyword="安眠药" Method="口服" MaxDose="5.0" />
     <ContainerMaxDose Keyword="止痛药" Method="口服" MaxDose="10.0" />
     <ContainerMaxDose Keyword="抗抑郁" Method="口服" MaxDose="20.0" />
