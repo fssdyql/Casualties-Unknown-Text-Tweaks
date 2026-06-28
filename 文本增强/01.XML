@@ -838,7 +838,7 @@
       </Stats>
     </Oral>
 	  <DosePrompts>
-		  <DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将触发致死性低血压和中枢抑制">
+		  <DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停,昏迷时更严重">
 			  <Interaction ConditionStat="阿片受体" Operator=">" ConditionValue="15.0" Formula="2.5" CustomMessage="药物相互作用,安眠药安全剂量暴跌至 2.5ml " />
 		  </DosePrompt>
 	  </DosePrompts>
