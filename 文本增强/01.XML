@@ -69,7 +69,9 @@
 				<Stat Field="局部消毒" ValuePerML="0.3" ValueColor="#00FF00" Suffix="秒" />
 				<Stat Field="肌肉健康" ValuePerML="-0.1" ValueColor="#FF0000" />
 				<Stat Field="疼痛" ValuePerML="0.4" ValueColor="#FF0000" />
-				<Stat Field="恶心" ValuePerML="3.0" ValueColor="#FF0000" />
+				<!-- 恶心计算：注射本身 2 * 0.35 + 药剂逻辑 1.0 = 1.7 -->
+				<Stat Field="恶心" ValuePerML="1.7" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.2" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -198,7 +200,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.4" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.14" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.04" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -345,7 +348,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.4" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.14" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.04" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -356,13 +360,14 @@
 				<Stat Field="水分" ValuePerML="0.09" ValueColor="#00FF00" />
 				<Stat Field="体温" ValuePerML="-0.001" ValueColor="#00FF00" Suffix="°C" />
 				<Stat Field="恶心" ValuePerML="-0.025" ValueColor="#00FF00" />
-				<Stat Field="体重" ValuePerML="0.0007" ValueColor="#00FF00" />
+				<Stat Field="体重" ValuePerML="0.007" ValueColor="#00FF00" />
 				<Stat Field="情绪" ValuePerML="-0.015" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.4" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.14" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.04" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -378,7 +383,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.4" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.14" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.04" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -394,7 +400,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="2.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.2" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -411,7 +418,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.4" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.14" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.04" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -427,7 +435,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.6" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.21" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.06" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -445,7 +454,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -462,7 +472,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.9" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.315" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.09" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -481,7 +492,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.245" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.07" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -500,7 +512,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.245" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.07" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -518,7 +531,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.4" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.14" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.04" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -536,7 +550,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -560,7 +575,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -584,7 +600,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -602,7 +619,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -618,7 +636,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="3.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="1.05" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.3" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 		<DosePrompts>
@@ -638,7 +657,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -659,7 +679,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.2" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.07" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.02" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -681,7 +702,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="10.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="3.5" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-1.0" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -701,7 +723,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.6" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.21" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.06" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -714,6 +737,12 @@
 				<Stat Field="恶心" ValuePerML="0.07" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.2625" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.075" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<Topical>
 			<Stats>
 				<Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
@@ -722,11 +751,6 @@
 				<Stat Field="疼痛" ValuePerML="0.1" ValueColor="#FF0000" />
 			</Stats>
 		</Topical>
-		<Injection>
-			<Stats>
-				<Stat Field="恶心" ValuePerML="0.75" ValueColor="#FF0000" />
-			</Stats>
-		</Injection>
 	</Liquid>
 
 	<Liquid Name="漂白剂">
@@ -747,6 +771,12 @@
 				</Buff>
 			</Buffs>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="1.75" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.5" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<Topical>
 			<Stats>
 				<Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
@@ -758,11 +788,6 @@
 				<Stat Field="感染" ValuePerML="-0.05" ValueColor="#00FF00" />
 			</Stats>
 		</Topical>
-		<Injection>
-			<Stats>
-				<Stat Field="恶心" ValuePerML="5.0" ValueColor="#FF0000" />
-			</Stats>
-		</Injection>
 	</Liquid>
 
 	<Liquid Name="镇痛膏">
@@ -774,6 +799,12 @@
 				<Special>&lt;color=#ffaa00&gt;口服会导致剧烈呕吐。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.2625" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.075" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<Topical>
 			<Stats>
 				<Stat Field="皮肤愈合" ValuePerML="0.3" ValueColor="#00FF00" />
@@ -789,12 +820,8 @@
 				</Buff>
 			</Buffs>
 		</Topical>
-		<Injection>
-			<Stats>
-				<Stat Field="恶心" ValuePerML="0.75" ValueColor="#FF0000" />
-			</Stats>
-		</Injection>
 	</Liquid>
+
 	<Liquid Name="伤口粘合剂">
 		<Oral>
 			<Stats>
@@ -804,6 +831,12 @@
 				<Special>&lt;color=#ffaa00&gt;口服会导致剧烈呕吐。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.2625" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.075" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<Topical>
 			<Stats>
 				<Stat Field="皮肤愈合" ValuePerML="0.5" ValueColor="#00FF00" />
@@ -822,11 +855,6 @@
 				<Special>&lt;color=#00FF00&gt;疼痛会依使用剂量百分比减少&lt;/color&gt;</Special>
 			</Specials>
 		</Topical>
-		<Injection>
-			<Stats>
-				<Stat Field="恶心" ValuePerML="0.75" ValueColor="#FF0000" />
-			</Stats>
-		</Injection>
 	</Liquid>
 
 	<Liquid Name="增脑剂">
@@ -886,7 +914,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.5" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.175" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.05" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1062,7 +1091,6 @@
 		</Injection>
 	</Liquid>
 
-
 	<Liquid Name="硝普钠">
 		<Oral>
 			<Stats>
@@ -1110,7 +1138,6 @@
 			</Buffs>
 		</Injection>
 	</Liquid>
-
 
 	<Liquid Name="链激酶">
 		<Oral>
@@ -1221,6 +1248,12 @@
 				<Stat Field="恶心" ValuePerML="0.15" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.4375" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.125" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<Topical>
 			<Stats>
 				<Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
@@ -1231,11 +1264,6 @@
 				</Stat>
 			</Stats>
 		</Topical>
-		<Injection>
-			<Stats>
-				<Stat Field="恶心" ValuePerML="1.25" ValueColor="#FF0000" />
-			</Stats>
-		</Injection>
 	</Liquid>
 
 	<Liquid Name="地下水">
@@ -1250,7 +1278,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.15" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.0525" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.015" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1270,7 +1299,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="1.6" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.56" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.16" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1287,7 +1317,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="5.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="1.75" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.5" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1304,7 +1335,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="2.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.2" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1321,7 +1353,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="2.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.2" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1338,7 +1371,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="2.0" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.2" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -1351,6 +1385,12 @@
 				<Stat Field="情绪" ValuePerML="-0.02" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.56" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.16" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<Topical>
 			<Stats>
 				<Stat Field="局部消毒" ValueColor="#00FF00" Suffix="秒">
@@ -1359,11 +1399,6 @@
 				<Stat Field="脏污" ValuePerML="-0.25" ValueColor="#00FF00" />
 			</Stats>
 		</Topical>
-		<Injection>
-			<Stats>
-				<Stat Field="恶心" ValuePerML="1.6" ValueColor="#FF0000" />
-			</Stats>
-		</Injection>
 	</Liquid>
 
 	<Liquid Name="粗制果汁">
@@ -1378,10 +1413,12 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.9" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.315" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.09" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
+
 	<Liquid Name="精制果汁">
 		<Oral>
 			<Stats>
@@ -1394,7 +1431,8 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="恶心" ValuePerML="0.7" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.245" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.07" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
