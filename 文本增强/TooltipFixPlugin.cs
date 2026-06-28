@@ -21,7 +21,7 @@ namespace TooltipFixMod
             ConfigPath = Path.Combine(Application.dataPath, "Lang", "LiquidEffects.xml");
             LiquidEffectManager.LoadConfig();
             Harmony.CreateAndPatchAll(typeof(UIUtilPatch));
-            Logger.LogInfo($"TooltipFixMod v1.7.0 Loaded - Custom Math & Drug Interactions Enabled!");
+            Logger.LogInfo($"TooltipFixMod v1.7.0 Loaded - Dynamic Layout Enabled!");
         }
     }
 
@@ -40,6 +40,8 @@ namespace TooltipFixMod
 
         private static List<LiquidSection> cachedLiquids = new List<LiquidSection>();
         private static string cachedContainerHeader = "";
+        private static List<string> activeOverviewModes = new List<string>(); // 存储当前可用的概览模式
+        private static bool useSplitOverview = false; // 是否因高度溢出而启用分页面板
 
         [HarmonyPostfix]
         public static void Postfix(ref ValueTuple<string, string> __result)
@@ -62,15 +64,14 @@ namespace TooltipFixMod
                 lastRawInputDesc = rawDesc;
                 lastRawInputName = rawName;
                 ParseLiquids(rawDesc, out cachedLiquids, out cachedContainerHeader);
+                EvaluateOverviewStrategy(rawName);
             }
 
-            bool hasLiquidConfig = false;
-            foreach (var l in cachedLiquids)
+            int minPage = 0;
+            if (activeOverviewModes.Count > 0)
             {
-                if (LiquidEffectManager.LiquidDict.ContainsKey(l.Name)) { hasLiquidConfig = true; break; }
+                minPage = useSplitOverview ? -activeOverviewModes.Count : -1;
             }
-
-            int minPage = hasLiquidConfig ? -1 : 0;
 
             if (!isShiftHeld)
             {
@@ -99,7 +100,7 @@ namespace TooltipFixMod
                         return;
                     }
 
-                    lastOutputDesc = BuildModdedText(cachedLiquids, cachedContainerHeader, rawName, currentPageIndex, hasLiquidConfig);
+                    lastOutputDesc = BuildModdedText(cachedLiquids, cachedContainerHeader, rawName, currentPageIndex);
                 }
                 else
                 {
@@ -151,33 +152,130 @@ namespace TooltipFixMod
             }
         }
 
-        private static string BuildModdedText(List<LiquidSection> liquids, string containerHeader, string containerName, int pageIndex, bool hasLiquidConfig)
+        private static int GetLineCount(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0;
+            int count = 1;
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (text[i] == '\n') count++;
+            }
+            return count;
+        }
+
+        private static void EvaluateOverviewStrategy(string containerName)
+        {
+            activeOverviewModes.Clear();
+            useSplitOverview = false;
+
+            bool hasOral = false;
+            bool hasInj = false;
+            bool hasTop = false;
+
+            foreach (var l in cachedLiquids)
+            {
+                if (LiquidEffectManager.TryGetConfig(l.Name, out var data))
+                {
+                    if (data.Oral != null && (data.Oral.Stats?.Count > 0 || data.Oral.Buffs?.Count > 0 || data.Oral.Specials?.Count > 0)) hasOral = true;
+                    if (data.Injection != null && (data.Injection.Stats?.Count > 0 || data.Injection.Buffs?.Count > 0 || data.Injection.Specials?.Count > 0)) hasInj = true;
+                    if (data.Topical != null && (data.Topical.Stats?.Count > 0 || data.Topical.Buffs?.Count > 0 || data.Topical.Specials?.Count > 0)) hasTop = true;
+                }
+            }
+
+            if (hasOral) activeOverviewModes.Add("Oral");
+            if (hasInj) activeOverviewModes.Add("Injection");
+            if (hasTop) activeOverviewModes.Add("Topical");
+
+            // 当存在复数种预估方式时，评估是否需要进行分页处理
+            if (activeOverviewModes.Count > 1)
+            {
+                string combinedText = BuildFullCombinedText(cachedLiquids, cachedContainerHeader, containerName);
+                int lines = GetLineCount(combinedText);
+
+                // 根据当前屏幕高度预估安全显示的最高行数（假设单行占用约22像素，利用高比例折算安全边界）
+                int safeLineLimit = Mathf.Max(12, (int)(Screen.height * 0.70f / 22f));
+
+                if (lines > safeLineLimit)
+                {
+                    useSplitOverview = true;
+                }
+            }
+        }
+
+        private static string GetChineseModeName(string mode)
+        {
+            switch (mode)
+            {
+                case "Oral": return "口服";
+                case "Injection": return "静脉注射";
+                case "Topical": return "外敷";
+                default: return mode;
+            }
+        }
+
+        private static string BuildFullCombinedText(List<LiquidSection> liquids, string containerHeader, string containerName)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(containerHeader.TrimEnd());
+            foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
 
-            if (pageIndex == -1)
+            sb.AppendLine("<color=#555555>──────────────────────────</color>");
+            string merged = CalculateAllMergedEffects(liquids, containerName);
+            if (!string.IsNullOrEmpty(merged)) sb.AppendLine(merged);
+
+            sb.AppendLine("<color=#555555>──────────────────────────</color>");
+            sb.AppendLine("<color=#888888><size=80%> 滚动鼠标滚轮翻页查看详细成分 </size></color>");
+            return sb.ToString();
+        }
+
+        private static string BuildModdedText(List<LiquidSection> liquids, string containerHeader, string containerName, int pageIndex)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (pageIndex < 0)
             {
-                foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
-
-                if (hasLiquidConfig)
+                if (useSplitOverview)
                 {
-                    sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                    string mergedEffectString = CalculateMergedEffects(liquids, containerName);
-                    if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString);
-                }
+                    // 使用分页模式显示
+                    sb.AppendLine(containerHeader.TrimEnd());
+                    foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
 
-                sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                sb.AppendLine("<color=#888888><size=80%> 滚动鼠标滚轮翻页查看详细成分 </size></color>");
+                    int overviewIdx = pageIndex + activeOverviewModes.Count;
+                    if (overviewIdx >= 0 && overviewIdx < activeOverviewModes.Count)
+                    {
+                        string mode = activeOverviewModes[overviewIdx];
+                        sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                        string mergedEffectString = CalculateSingleMergedEffect(liquids, containerName, mode);
+                        if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString);
+                    }
+
+                    sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                    sb.AppendLine($"<color=#888888><size=80%>[ 概览 {overviewIdx + 1} / {activeOverviewModes.Count} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
+                    sb.AppendLine("<color=#666666> ────────────────────</color>");
+                    for (int i = 0; i < activeOverviewModes.Count; i++)
+                    {
+                        string mName = GetChineseModeName(activeOverviewModes[i]);
+                        int targetPage = i - activeOverviewModes.Count;
+                        if (targetPage == pageIndex) sb.AppendLine($"<color=#00FFFF>▶ 【{mName}预估】</color>");
+                        else sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
+                    }
+                }
+                else
+                {
+                    // 未超出时，单页合并显示
+                    sb.Append(BuildFullCombinedText(liquids, containerHeader, containerName));
+                }
             }
             else
             {
+                // 成分详情页
+                sb.AppendLine(containerHeader.TrimEnd());
                 var currentLiq = liquids[pageIndex];
                 sb.AppendLine($"<color=#FFFFFF><b>{currentLiq.headerLine}</b></color>");
                 foreach (string bl in currentLiq.bodyLines) sb.AppendLine(bl);
 
                 sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                sb.AppendLine($"<color=#888888><size=80%>[第 {pageIndex + 1} / {liquids.Count} 页]</size></color>");
+                sb.AppendLine($"<color=#888888><size=80%>[成分第 {pageIndex + 1} / {liquids.Count} 页]</size></color>");
                 sb.AppendLine("<color=#666666> ────────────────────</color>");
                 for (int i = 0; i < liquids.Count; i++)
                 {
@@ -203,7 +301,106 @@ namespace TooltipFixMod
             }
         }
 
-        private static string CalculateMergedEffects(List<LiquidSection> liquids, string containerName)
+        private static string CalculateSingleMergedEffect(List<LiquidSection> liquids, string containerName, string mode)
+        {
+            if (liquids == null || liquids.Count == 0) return "";
+            StringBuilder sb = new StringBuilder();
+            var methodStats = new Dictionary<string, double>();
+
+            string methodTitle = "";
+            Func<LiquidEntry, UsageMethodEntry> selector = null;
+
+            if (mode == "Oral") { methodTitle = "口服"; selector = data => data.Oral; }
+            else if (mode == "Injection") { methodTitle = "静脉注射"; selector = data => data.Injection; }
+            else if (mode == "Topical") { methodTitle = "外敷"; selector = data => data.Topical; }
+
+            if (selector == null) return "";
+
+            bool hasData = ProcessUsageMethod(methodTitle, liquids, selector, sb, methodStats, containerName);
+            if (!hasData) return "";
+
+            StringBuilder promptSb = new StringBuilder();
+            double totalVolume = 0;
+            foreach (var liq in liquids) totalVolume += liq.AmountML;
+
+            if (totalVolume > 0)
+            {
+                double maxPossibleIntake = GetMaxDose(methodTitle, containerName);
+                double maxConsumeRatio = Math.Min(totalVolume, maxPossibleIntake) / totalVolume;
+
+                foreach (var liq in liquids)
+                {
+                    if (LiquidEffectManager.TryGetConfig(liq.Name, out var liquidData) && liquidData.DosePrompts != null)
+                    {
+                        var usageData = selector(liquidData);
+                        if (usageData == null) continue;
+
+                        double intakeML = liq.AmountML * maxConsumeRatio;
+                        foreach (var dp in liquidData.DosePrompts)
+                        {
+                            double currentThreshold = dp.Threshold;
+                            string currentMessage = dp.Message;
+
+                            if (dp.Interactions != null)
+                            {
+                                foreach (var inter in dp.Interactions)
+                                {
+                                    double condVal = methodStats.ContainsKey(inter.ConditionStat) ? methodStats[inter.ConditionStat] : 0;
+                                    if (EvaluateCondition(condVal, inter.Operator, inter.ConditionValue))
+                                    {
+                                        if (!string.IsNullOrEmpty(inter.Formula))
+                                            currentThreshold = MathEvaluator.Evaluate(inter.Formula, currentThreshold, intakeML, methodStats);
+                                        if (!string.IsNullOrEmpty(inter.CustomMessage))
+                                            currentMessage = inter.CustomMessage;
+                                    }
+                                }
+                            }
+
+                            if (intakeML > 0 && intakeML >= currentThreshold)
+                                promptSb.AppendLine($"  <color=#FF5555>• [{liq.Name}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {currentMessage}</color>");
+                        }
+                    }
+                }
+            }
+
+            if (LiquidEffectManager.GlobalEffectPrompts != null)
+            {
+                foreach (var ep in LiquidEffectManager.GlobalEffectPrompts)
+                {
+                    double maxVal = methodStats.ContainsKey(ep.Field) ? methodStats[ep.Field] : 0;
+                    double currentThreshold = ep.Threshold;
+                    string currentMessage = ep.Message;
+
+                    if (ep.Interactions != null)
+                    {
+                        foreach (var inter in ep.Interactions)
+                        {
+                            double condVal = methodStats.ContainsKey(inter.ConditionStat) ? methodStats[inter.ConditionStat] : 0;
+                            if (EvaluateCondition(condVal, inter.Operator, inter.ConditionValue))
+                            {
+                                if (!string.IsNullOrEmpty(inter.Formula))
+                                    currentThreshold = MathEvaluator.Evaluate(inter.Formula, currentThreshold, maxVal, methodStats);
+                                if (!string.IsNullOrEmpty(inter.CustomMessage))
+                                    currentMessage = inter.CustomMessage;
+                            }
+                        }
+                    }
+
+                    if (maxVal > 0 && maxVal >= currentThreshold)
+                        promptSb.AppendLine($"  <color=#FF5555>• {ep.Field}单次最高预估达到 {Math.Round(maxVal, 2)}: {currentMessage}</color>");
+                }
+            }
+
+            if (promptSb.Length > 0)
+            {
+                sb.AppendLine("<color=#FF3333>──────────────────────────</color>");
+                sb.Append(promptSb.ToString());
+            }
+
+            return sb.ToString();
+        }
+
+        private static string CalculateAllMergedEffects(List<LiquidSection> liquids, string containerName)
         {
             if (liquids == null || liquids.Count == 0) return "";
             StringBuilder sb = new StringBuilder();
@@ -469,7 +666,7 @@ namespace TooltipFixMod
             catch (Exception ex)
             {
                 Debug.LogError("[TooltipFix] Formula Evaluation Error: " + ex.Message + " in formula: " + formula);
-                return x;  
+                return x;
             }
         }
 
@@ -546,12 +743,12 @@ namespace TooltipFixMod
 
     public class InteractionRule
     {
-        [XmlAttribute] public string ConditionStat = "";  
-        [XmlAttribute] public string Operator = ">";       
-        [XmlAttribute] public double ConditionValue = 0;   
+        [XmlAttribute] public string ConditionStat = "";
+        [XmlAttribute] public string Operator = ">";
+        [XmlAttribute] public double ConditionValue = 0;
 
         [XmlAttribute] public string Formula = "";
-        [XmlAttribute] public string CustomMessage = ""; 
+        [XmlAttribute] public string CustomMessage = "";
     }
 
     public class StatRule

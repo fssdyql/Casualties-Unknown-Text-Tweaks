@@ -1241,7 +1241,7 @@
     <ContainerMaxDose Keyword="链激酶" Method="静脉注射" MaxDose="34.0" />
     <ContainerMaxDose Keyword="抗血清" Method="静脉注射" MaxDose="50.0" />
     <ContainerMaxDose Keyword="血袋" Method="静脉注射" MaxDose="375.0" />
-    <ContainerMaxDose Keyword="自动注射" Method="静脉注射" MaxDose="2.0" />
+    <ContainerMaxDose Keyword="自动注射" Method="静脉注射" MaxDose="20.0" />
 
     <ContainerMaxDose Keyword="安眠药" Method="口服" MaxDose="5.0" />
     <ContainerMaxDose Keyword="止痛药" Method="口服" MaxDose="10.0" />
