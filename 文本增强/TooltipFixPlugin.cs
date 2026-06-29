@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq; 
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TooltipFixMod
 {
-    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.2")]
+    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.3")]
     public class TooltipFixPlugin : BaseUnityPlugin
     {
         public static string ConfigPath;
@@ -21,13 +21,35 @@ namespace TooltipFixMod
         {
             ConfigPath = Path.Combine(Application.dataPath, "Lang", "LiquidEffects.xml");
             LiquidEffectManager.LoadConfig();
-            Harmony.CreateAndPatchAll(typeof(UIUtilPatch));
-            Logger.LogInfo($"TooltipFixMod v0.1.2 ...?");
+
+            Harmony harmony = new Harmony("com.yourname.tooltipfix");
+            harmony.PatchAll();
+
+            Logger.LogInfo($"TooltipFixMod v0.1.3 Loaded.");
         }
     }
 
     [HarmonyPatch(typeof(UIUtil), "GetUITooltip")]
     public class UIUtilPatch
+    {
+        [HarmonyPostfix]
+        public static void Postfix(ref ValueTuple<string, string> __result)
+        {
+            UIUtilPatchHelper.MangleTooltip(ref __result);
+        }
+    }
+
+    [HarmonyPatch(typeof(GlobalDark), "SetTooltip")]
+    public class GlobalDarkSetTooltipPatch
+    {
+        [HarmonyPrefix]
+        public static void Prefix(ref ValueTuple<string, string> newText)
+        {
+            UIUtilPatchHelper.MangleTooltip(ref newText);
+        }
+    }
+
+    public static class UIUtilPatchHelper
     {
         private static readonly Regex LiquidHeaderRegex = new Regex(
             @"^[ \t]*([^\n(（]+)[(（]\s*(\d+(?:\.\d+)?)\s*mL[)）][^\n]*$",
@@ -43,15 +65,22 @@ namespace TooltipFixMod
         private static string cachedContainerHeader = "";
         private static List<string> activeOverviewModes = new List<string>();
         private static bool useSplitOverview = false;
-        private static bool useLiquidListPage = false; 
+        private static bool useLiquidListPage = false;
 
         private static string lastLiquidStructure = "";
 
-        [HarmonyPostfix]
-        public static void Postfix(ref ValueTuple<string, string> __result)
+        public class LiquidSection
         {
-            string rawName = __result.Item1;
-            string rawDesc = __result.Item2;
+            public string Name;
+            public double AmountML;
+            public string headerLine;
+            public List<string> bodyLines = new List<string>();
+        }
+
+        public static void MangleTooltip(ref ValueTuple<string, string> tooltip)
+        {
+            string rawName = tooltip.Item1;
+            string rawDesc = tooltip.Item2;
 
             if (string.IsNullOrEmpty(rawName) || string.IsNullOrEmpty(rawDesc))
             {
@@ -117,7 +146,7 @@ namespace TooltipFixMod
 
                     if (!descChanged && isShiftHeld == lastShiftState && !pageChanged)
                     {
-                        __result.Item2 = lastOutputDesc;
+                        tooltip.Item2 = lastOutputDesc;
                         return;
                     }
 
@@ -130,15 +159,7 @@ namespace TooltipFixMod
             }
 
             lastShiftState = isShiftHeld;
-            __result.Item2 = lastOutputDesc;
-        }
-
-        private class LiquidSection
-        {
-            public string Name;
-            public double AmountML;
-            public string headerLine;
-            public List<string> bodyLines = new List<string>();
+            tooltip.Item2 = lastOutputDesc;
         }
 
         private static void ParseLiquids(string rawDesc, out List<LiquidSection> liquids, out string containerHeader)
@@ -224,7 +245,7 @@ namespace TooltipFixMod
             if (useSplitOverview)
             {
                 int listLines = GetLineCount(cachedContainerHeader.TrimEnd()) + cachedLiquids.Count;
-                int footerLines = 3 + activeOverviewModes.Count; 
+                int footerLines = 3 + activeOverviewModes.Count;
 
                 foreach (var mode in activeOverviewModes)
                 {
@@ -303,7 +324,7 @@ namespace TooltipFixMod
                         {
                             foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
                         }
-                        
+
                         int overviewIdx = pageIndex + activeOverviewModes.Count;
                         if (overviewIdx >= 0 && overviewIdx < activeOverviewModes.Count)
                         {
@@ -318,7 +339,7 @@ namespace TooltipFixMod
                         if (useLiquidListPage)
                         {
                             int totalPages = activeOverviewModes.Count + 1;
-                            int currentPageNum = overviewIdx + 2; 
+                            int currentPageNum = overviewIdx + 2;
                             sb.AppendLine($"<color=#888888><size=80%>[ 概览 {currentPageNum} / {totalPages} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                             sb.AppendLine("<color=#666666> ────────────────────</color>");
                             sb.AppendLine($"  <color=#888888>【成分列表】</color>");
