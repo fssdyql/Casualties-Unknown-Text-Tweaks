@@ -9,10 +9,11 @@ using System.Xml.Serialization;
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace TooltipFixMod
 {
-    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.3")]
+    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "1.2.1")]
     public class TooltipFixPlugin : BaseUnityPlugin
     {
         public static string ConfigPath;
@@ -25,49 +26,215 @@ namespace TooltipFixMod
             Harmony harmony = new Harmony("com.yourname.tooltipfix");
             harmony.PatchAll();
 
-            Logger.LogInfo($"TooltipFixMod v0.1.3 Loaded.");
+            Logger.LogInfo($"TooltipFixMod v1.2.1 Loaded (Flicker-Free Engine).");
         }
     }
 
-    [HarmonyPatch(typeof(UIUtil), "GetUITooltip")]
-    public class UIUtilPatch
-    {
-        [HarmonyPostfix]
-        public static void Postfix(ref ValueTuple<string, string> __result)
-        {
-            UIUtilPatchHelper.MangleTooltip(ref __result);
-        }
-    }
-
-    [HarmonyPatch(typeof(GlobalDark), "SetTooltip")]
-    public class GlobalDarkSetTooltipPatch
+    [HarmonyPatch(typeof(GlobalDark), "HandleTooltip")]
+    public class TooltipRenderPatch
     {
         [HarmonyPrefix]
-        public static void Prefix(ref ValueTuple<string, string> newText)
+        public static bool Prefix(GlobalDark __instance)
         {
-            UIUtilPatchHelper.MangleTooltip(ref newText);
+            __instance.tooltipRect.anchoredPosition = Input.mousePosition;
+
+            var uitooltip = UIUtil.GetUITooltip(UIUtil.GetEventSystemRaycastResults(null));
+            if (!string.IsNullOrEmpty(uitooltip.Item1))
+            {
+                __instance.tooltipText = uitooltip;
+            }
+
+            __instance.tooltipRect.gameObject.SetActive(__instance.showTooltip);
+
+            if (__instance.showTooltip)
+            {
+                // 1. 同步缩放
+                __instance.tooltipRect.localScale = Vector3.Lerp(__instance.tooltipRect.localScale, Vector3.one * (float)Screen.height / 1080f, Time.unscaledDeltaTime * 24f);
+
+                if (__instance.distortionAmount > 0f)
+                {
+                    __instance.tooltipText.Item1 = __instance.DistortStr(__instance.tooltipText.Item1);
+                    __instance.tooltipText.Item2 = __instance.DistortStr(__instance.tooltipText.Item2);
+                }
+
+                __instance.tooltipNameObj.text = __instance.tooltipText.Item1;
+
+                // 2. 挂载遮罩，防止溢出
+                if (__instance.tooltipDescObj.transform.parent != __instance.hoverDescriptionBackground.transform)
+                {
+                    __instance.tooltipDescObj.transform.SetParent(__instance.hoverDescriptionBackground.transform, true);
+                }
+
+                if (!__instance.hoverDescriptionBackground.TryGetComponent<RectMask2D>(out _))
+                {
+                    __instance.hoverDescriptionBackground.gameObject.AddComponent<RectMask2D>();
+                }
+
+                __instance.tooltipDescObj.rectTransform.anchorMin = new Vector2(0f, 1f);
+                __instance.tooltipDescObj.rectTransform.anchorMax = new Vector2(1f, 1f);
+                __instance.tooltipDescObj.rectTransform.pivot = new Vector2(0f, 1f);
+
+                string rawName = __instance.tooltipText.Item1;
+                string rawDesc = __instance.tooltipText.Item2;
+                UIUtilPatchHelper.cachedMaxHeight = (float)Screen.height - 150f * __instance.uiScale;
+
+                bool isShiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+                float scrollInput = Input.mouseScrollDelta.y;
+
+                bool descChanged = (rawDesc != UIUtilPatchHelper.lastRawInputDesc || rawName != UIUtilPatchHelper.lastRawInputName);
+
+                // 3. 数据源变更时，重新解析液体段落
+                if (descChanged)
+                {
+                    UIUtilPatchHelper.lastRawInputDesc = rawDesc;
+                    UIUtilPatchHelper.lastRawInputName = rawName;
+                    UIUtilPatchHelper.ParseLiquids(rawDesc, out UIUtilPatchHelper.cachedLiquids, out UIUtilPatchHelper.cachedContainerHeader);
+                    UIUtilPatchHelper.EvaluateOverviewStrategy(rawName, UIUtilPatchHelper.cachedLiquids, out UIUtilPatchHelper.activeOverviewModes, out UIUtilPatchHelper.useSplitOverview, out UIUtilPatchHelper.useLiquidListPage);
+
+                    StringBuilder structSb = new StringBuilder(rawName);
+                    foreach (var l in UIUtilPatchHelper.cachedLiquids) structSb.Append("_").Append(l.Name);
+                    string currentStructure = structSb.ToString();
+
+                    if (currentStructure != UIUtilPatchHelper.lastLiquidStructure)
+                    {
+                        UIUtilPatchHelper.lastLiquidStructure = currentStructure;
+                        int newMinPage = 0;
+                        if (UIUtilPatchHelper.activeOverviewModes.Count > 0)
+                        {
+                            newMinPage = UIUtilPatchHelper.useSplitOverview ? -UIUtilPatchHelper.activeOverviewModes.Count : -1;
+                            if (UIUtilPatchHelper.useLiquidListPage) newMinPage = -UIUtilPatchHelper.activeOverviewModes.Count - 1;
+                        }
+                        UIUtilPatchHelper.currentLiquidPageIndex = newMinPage;
+                    }
+                }
+
+                int minPage = 0;
+                if (UIUtilPatchHelper.activeOverviewModes.Count > 0)
+                {
+                    minPage = UIUtilPatchHelper.useSplitOverview ? -UIUtilPatchHelper.activeOverviewModes.Count : -1;
+                    if (UIUtilPatchHelper.useLiquidListPage) minPage = -UIUtilPatchHelper.activeOverviewModes.Count - 1;
+                }
+
+                // 4. 计算当前文本原始大小
+                __instance.tooltipDescObj.text = rawDesc;
+                __instance.tooltipDescObj.ForceMeshUpdate();
+                float originalFullHeight = __instance.tooltipDescObj.preferredHeight;
+
+                UIUtilPatchHelper.isCollapsibleMode = (originalFullHeight > UIUtilPatchHelper.cachedMaxHeight && UIUtilPatchHelper.cachedLiquids.Count > 0);
+
+                // 5. 根据 Shift 状态分支渲染，避免产生原版折叠测量的过渡帧
+                if (!isShiftHeld)
+                {
+                    UIUtilPatchHelper.currentLiquidPageIndex = minPage;
+                    UIUtilPatchHelper.scrollOffset = 0f;
+
+                    if (UIUtilPatchHelper.isCollapsibleMode)
+                    {
+                        // 渲染自定义折叠布局，防止原版 1 帧测绘延迟
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine(UIUtilPatchHelper.cachedContainerHeader.TrimEnd());
+                        sb.AppendLine("<color=#666666>──────────────────────────</color>");
+                        foreach (var l in UIUtilPatchHelper.cachedLiquids)
+                        {
+                            sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
+                        }
+                        sb.AppendLine("<color=#666666>──────────────────────────</color>");
+                        sb.AppendLine("<color=#00FF00>◆ 按住 Shift 展开预测与详细信息</color>");
+                        __instance.tooltipDescObj.text = sb.ToString();
+                    }
+                    else
+                    {
+                        __instance.tooltipDescObj.text = rawDesc;
+                    }
+                }
+                else
+                {
+                    if (UIUtilPatchHelper.cachedLiquids.Count > 0)
+                    {
+                        if (UIUtilPatchHelper.currentLiquidPageIndex < minPage) UIUtilPatchHelper.currentLiquidPageIndex = minPage;
+                        if (UIUtilPatchHelper.currentLiquidPageIndex >= UIUtilPatchHelper.cachedLiquids.Count) UIUtilPatchHelper.currentLiquidPageIndex = UIUtilPatchHelper.cachedLiquids.Count - 1;
+
+                        if (Mathf.Abs(scrollInput) > 0.01f)
+                        {
+                            int totalStates = UIUtilPatchHelper.cachedLiquids.Count - minPage;
+                            int offset = (scrollInput > 0f) ? -1 : 1;
+                            UIUtilPatchHelper.currentLiquidPageIndex = ((UIUtilPatchHelper.currentLiquidPageIndex - minPage + offset) % totalStates + totalStates) % totalStates + minPage;
+                        }
+
+                        __instance.tooltipDescObj.text = UIUtilPatchHelper.BuildModdedText(UIUtilPatchHelper.cachedLiquids, UIUtilPatchHelper.cachedContainerHeader, rawName, UIUtilPatchHelper.currentLiquidPageIndex, UIUtilPatchHelper.activeOverviewModes, UIUtilPatchHelper.useSplitOverview, UIUtilPatchHelper.useLiquidListPage);
+                    }
+                    else
+                    {
+                        __instance.tooltipDescObj.text = rawDesc;
+                    }
+                }
+
+                // 强制几何体更新获取精确尺寸
+                __instance.tooltipDescObj.ForceMeshUpdate();
+
+                // 6. 处理非折叠下的原生滚动
+                if (!UIUtilPatchHelper.isCollapsibleMode && Mathf.Abs(scrollInput) > 0.01f && __instance.tooltipDescObj.preferredHeight > UIUtilPatchHelper.cachedMaxHeight)
+                {
+                    UIUtilPatchHelper.scrollOffset += scrollInput * 40f * __instance.uiScale;
+                    UIUtilPatchHelper.scrollOffset = Mathf.Clamp(UIUtilPatchHelper.scrollOffset, 0f, Mathf.Max(0f, __instance.tooltipDescObj.preferredHeight - UIUtilPatchHelper.cachedMaxHeight));
+                }
+                if (UIUtilPatchHelper.isCollapsibleMode) UIUtilPatchHelper.scrollOffset = 0f;
+
+                __instance.tooltipDescObj.rectTransform.anchoredPosition = new Vector2(__instance.tooltipDescObj.rectTransform.anchoredPosition.x, UIUtilPatchHelper.scrollOffset);
+
+                // 7. 自适应背景宽度及高度
+                float adjustedBgHeight = (__instance.tooltipDescObj.preferredHeight > UIUtilPatchHelper.cachedMaxHeight) ? UIUtilPatchHelper.cachedMaxHeight : __instance.tooltipDescObj.preferredHeight;
+                __instance.hoverNameBackground.sizeDelta = new Vector2(__instance.tooltipNameObj.preferredWidth, __instance.hoverNameBackground.sizeDelta.y);
+                __instance.hoverDescriptionBackground.sizeDelta = new Vector2(
+                    Mathf.Min(__instance.tooltipDescObj.preferredWidth, __instance.tooltipDescObj.rectTransform.sizeDelta.x),
+                    adjustedBgHeight
+                );
+
+                // 8. 屏幕边界碰撞检测
+                Vector2 vector = new Vector2(
+                    Mathf.Max(__instance.hoverNameBackground.position.x + __instance.hoverNameBackground.sizeDelta.x * __instance.uiScale, __instance.hoverDescriptionBackground.position.x + __instance.hoverDescriptionBackground.sizeDelta.x * __instance.uiScale),
+                    Mathf.Min(__instance.hoverDescriptionBackground.position.y, __instance.hoverNameBackground.position.y - __instance.hoverDescriptionBackground.sizeDelta.y * __instance.uiScale)
+                );
+                Vector2 vector2 = new Vector2(
+                    Mathf.Clamp(vector.x, 30f * __instance.uiScale, (float)Screen.width - 30f * __instance.uiScale),
+                    Mathf.Clamp(vector.y, 30f * __instance.uiScale, (float)Screen.height - 30f * __instance.uiScale)
+                );
+
+                if (vector != vector2)
+                {
+                    Vector2 v = vector2 - vector;
+                    __instance.tooltipRect.position += (Vector3)v;
+                }
+            }
+            else
+            {
+                __instance.tooltipRect.localScale = new Vector3(0.1f, 0.1f, 1f);
+            }
+
+            return false; // 跳过原游戏渲染流程，避免出现双重运算导致闪烁
         }
     }
 
     public static class UIUtilPatchHelper
     {
-        private static readonly Regex LiquidHeaderRegex = new Regex(
+        public static readonly Regex LiquidHeaderRegex = new Regex(
             @"^[ \t]*([^\n(（]+)[(（]\s*(\d+(?:\.\d+)?)\s*mL[)）][^\n]*$",
             RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        private static string lastRawInputDesc = "";
-        private static string lastRawInputName = "";
-        private static bool lastShiftState = false;
-        private static int currentPageIndex = -1;
-        private static string lastOutputDesc = "";
+        // 统一声明所有跨类访问的状态变量
+        public static string lastRawInputDesc = "";
+        public static string lastRawInputName = "";
+        public static int currentLiquidPageIndex = 0;
+        public static float scrollOffset = 0f;
+        public static bool isCollapsibleMode = false;
+        public static float cachedMaxHeight = 0f;
 
-        private static List<LiquidSection> cachedLiquids = new List<LiquidSection>();
-        private static string cachedContainerHeader = "";
-        private static List<string> activeOverviewModes = new List<string>();
-        private static bool useSplitOverview = false;
-        private static bool useLiquidListPage = false;
-
-        private static string lastLiquidStructure = "";
+        public static List<LiquidSection> cachedLiquids = new List<LiquidSection>();
+        public static string cachedContainerHeader = "";
+        public static List<string> activeOverviewModes = new List<string>();
+        public static bool useSplitOverview = false;
+        public static bool useLiquidListPage = false;
+        public static string lastLiquidStructure = "";
 
         public class LiquidSection
         {
@@ -77,92 +244,7 @@ namespace TooltipFixMod
             public List<string> bodyLines = new List<string>();
         }
 
-        public static void MangleTooltip(ref ValueTuple<string, string> tooltip)
-        {
-            string rawName = tooltip.Item1;
-            string rawDesc = tooltip.Item2;
-
-            if (string.IsNullOrEmpty(rawName) || string.IsNullOrEmpty(rawDesc))
-            {
-                return;
-            }
-
-            bool isShiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            float scrollDelta = Input.mouseScrollDelta.y;
-
-            bool descChanged = (rawDesc != lastRawInputDesc || rawName != lastRawInputName);
-
-            if (descChanged)
-            {
-                lastRawInputDesc = rawDesc;
-                lastRawInputName = rawName;
-                ParseLiquids(rawDesc, out cachedLiquids, out cachedContainerHeader);
-                EvaluateOverviewStrategy(rawName);
-
-                StringBuilder structSb = new StringBuilder(rawName);
-                foreach (var l in cachedLiquids) structSb.Append("_").Append(l.Name);
-                string currentStructure = structSb.ToString();
-
-                if (currentStructure != lastLiquidStructure)
-                {
-                    lastLiquidStructure = currentStructure;
-                    int newMinPage = 0;
-                    if (activeOverviewModes.Count > 0)
-                    {
-                        newMinPage = useSplitOverview ? -activeOverviewModes.Count : -1;
-                        if (useLiquidListPage) newMinPage = -activeOverviewModes.Count - 1;
-                    }
-                    currentPageIndex = newMinPage;
-                }
-            }
-
-            int minPage = 0;
-            if (activeOverviewModes.Count > 0)
-            {
-                minPage = useSplitOverview ? -activeOverviewModes.Count : -1;
-                if (useLiquidListPage) minPage = -activeOverviewModes.Count - 1;
-            }
-
-            if (!isShiftHeld)
-            {
-                currentPageIndex = minPage;
-                lastOutputDesc = rawDesc;
-            }
-            else
-            {
-                if (cachedLiquids.Count > 0)
-                {
-                    if (currentPageIndex < minPage) currentPageIndex = minPage;
-                    if (currentPageIndex >= cachedLiquids.Count) currentPageIndex = cachedLiquids.Count - 1;
-
-                    bool pageChanged = false;
-                    if (Mathf.Abs(scrollDelta) > 0.01f)
-                    {
-                        int totalStates = cachedLiquids.Count - minPage;
-                        int offset = (scrollDelta > 0f) ? -1 : 1;
-                        currentPageIndex = ((currentPageIndex - minPage + offset) % totalStates + totalStates) % totalStates + minPage;
-                        pageChanged = true;
-                    }
-
-                    if (!descChanged && isShiftHeld == lastShiftState && !pageChanged)
-                    {
-                        tooltip.Item2 = lastOutputDesc;
-                        return;
-                    }
-
-                    lastOutputDesc = BuildModdedText(cachedLiquids, cachedContainerHeader, rawName, currentPageIndex);
-                }
-                else
-                {
-                    lastOutputDesc = rawDesc;
-                }
-            }
-
-            lastShiftState = isShiftHeld;
-            tooltip.Item2 = lastOutputDesc;
-        }
-
-        private static void ParseLiquids(string rawDesc, out List<LiquidSection> liquids, out string containerHeader)
+        public static void ParseLiquids(string rawDesc, out List<LiquidSection> liquids, out string containerHeader)
         {
             liquids = new List<LiquidSection>();
             containerHeader = "";
@@ -205,17 +287,17 @@ namespace TooltipFixMod
             return count;
         }
 
-        private static void EvaluateOverviewStrategy(string containerName)
+        public static void EvaluateOverviewStrategy(string containerName, List<LiquidSection> liquids, out List<string> activeModes, out bool splitOverview, out bool liquidListPage)
         {
-            activeOverviewModes.Clear();
-            useSplitOverview = false;
-            useLiquidListPage = false;
+            activeModes = new List<string>();
+            splitOverview = false;
+            liquidListPage = false;
 
             bool hasOral = false;
             bool hasInj = false;
             bool hasTop = false;
 
-            foreach (var l in cachedLiquids)
+            foreach (var l in liquids)
             {
                 if (LiquidEffectManager.TryGetConfig(l.Name, out var data))
                 {
@@ -225,37 +307,37 @@ namespace TooltipFixMod
                 }
             }
 
-            if (hasOral) activeOverviewModes.Add("Oral");
-            if (hasInj) activeOverviewModes.Add("Injection");
-            if (hasTop) activeOverviewModes.Add("Topical");
+            if (hasOral) activeModes.Add("Oral");
+            if (hasInj) activeModes.Add("Injection");
+            if (hasTop) activeModes.Add("Topical");
 
             int safeLineLimit = Mathf.Max(12, (int)(Screen.height * 0.70f / 22f));
 
-            if (activeOverviewModes.Count > 0)
+            if (activeModes.Count > 0)
             {
-                string combinedText = BuildFullCombinedText(cachedLiquids, cachedContainerHeader, containerName);
+                string combinedText = BuildFullCombinedText(liquids, cachedContainerHeader, containerName);
                 int lines = GetLineCount(combinedText);
 
                 if (lines > safeLineLimit)
                 {
-                    useSplitOverview = true;
+                    splitOverview = true;
                 }
             }
 
-            if (useSplitOverview)
+            if (splitOverview)
             {
-                int listLines = GetLineCount(cachedContainerHeader.TrimEnd()) + cachedLiquids.Count;
-                int footerLines = 3 + activeOverviewModes.Count;
+                int listLines = GetLineCount(cachedContainerHeader.TrimEnd()) + liquids.Count;
+                int footerLines = 3 + activeModes.Count;
 
-                foreach (var mode in activeOverviewModes)
+                foreach (var mode in activeModes)
                 {
-                    string merged = CalculateSingleMergedEffect(cachedLiquids, containerName, mode);
+                    string merged = CalculateSingleMergedEffect(liquids, containerName, mode, activeModes);
                     int mergedLines = GetLineCount(merged);
 
                     int totalExpectedLines = listLines + 1 + mergedLines + footerLines;
                     if (totalExpectedLines > safeLineLimit)
                     {
-                        useLiquidListPage = true;
+                        liquidListPage = true;
                         break;
                     }
                 }
@@ -273,7 +355,7 @@ namespace TooltipFixMod
             }
         }
 
-        private static string BuildFullCombinedText(List<LiquidSection> liquids, string containerHeader, string containerName)
+        public static string BuildFullCombinedText(List<LiquidSection> liquids, string containerHeader, string containerName)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(containerHeader.TrimEnd());
@@ -288,15 +370,15 @@ namespace TooltipFixMod
             return sb.ToString();
         }
 
-        private static string BuildModdedText(List<LiquidSection> liquids, string containerHeader, string containerName, int pageIndex)
+        public static string BuildModdedText(List<LiquidSection> liquids, string containerHeader, string containerName, int pageIndex, List<string> activeModes, bool splitOverview, bool liquidListPage)
         {
             StringBuilder sb = new StringBuilder();
 
             if (pageIndex < 0)
             {
-                if (useSplitOverview)
+                if (splitOverview)
                 {
-                    bool isLiquidListPage = useLiquidListPage && (pageIndex == -activeOverviewModes.Count - 1);
+                    bool isLiquidListPage = liquidListPage && (pageIndex == -activeModes.Count - 1);
 
                     if (isLiquidListPage)
                     {
@@ -304,12 +386,12 @@ namespace TooltipFixMod
                         foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
 
                         sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                        sb.AppendLine($"<color=#888888><size=80%>[ 概览 1 / {activeOverviewModes.Count + 1} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
+                        sb.AppendLine($"<color=#888888><size=80%>[ 概览 1 / {activeModes.Count + 1} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                         sb.AppendLine("<color=#666666> ────────────────────</color>");
                         sb.AppendLine($"<color=#00FFFF>▶ 【成分列表】</color>");
-                        for (int i = 0; i < activeOverviewModes.Count; i++)
+                        for (int i = 0; i < activeModes.Count; i++)
                         {
-                            string mName = GetChineseModeName(activeOverviewModes[i]);
+                            string mName = GetChineseModeName(activeModes[i]);
                             sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
                         }
                     }
@@ -317,45 +399,45 @@ namespace TooltipFixMod
                     {
                         sb.AppendLine(containerHeader.TrimEnd());
 
-                        if (!useLiquidListPage)
+                        if (!liquidListPage)
                         {
                             foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
                         }
 
-                        int overviewIdx = pageIndex + activeOverviewModes.Count;
-                        if (overviewIdx >= 0 && overviewIdx < activeOverviewModes.Count)
+                        int overviewIdx = pageIndex + activeModes.Count;
+                        if (overviewIdx >= 0 && overviewIdx < activeModes.Count)
                         {
-                            string mode = activeOverviewModes[overviewIdx];
+                            string mode = activeModes[overviewIdx];
                             sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                            string mergedEffectString = CalculateSingleMergedEffect(liquids, containerName, mode);
+                            string mergedEffectString = CalculateSingleMergedEffect(liquids, containerName, mode, activeModes);
                             if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString);
                         }
 
                         sb.AppendLine("<color=#555555>──────────────────────────</color>");
 
-                        if (useLiquidListPage)
+                        if (liquidListPage)
                         {
-                            int totalPages = activeOverviewModes.Count + 1;
+                            int totalPages = activeModes.Count + 1;
                             int currentPageNum = overviewIdx + 2;
                             sb.AppendLine($"<color=#888888><size=80%>[ 概览 {currentPageNum} / {totalPages} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                             sb.AppendLine("<color=#666666> ────────────────────</color>");
                             sb.AppendLine($"  <color=#888888>【成分列表】</color>");
-                            for (int i = 0; i < activeOverviewModes.Count; i++)
+                            for (int i = 0; i < activeModes.Count; i++)
                             {
-                                string mName = GetChineseModeName(activeOverviewModes[i]);
-                                int targetPage = i - activeOverviewModes.Count;
+                                string mName = GetChineseModeName(activeModes[i]);
+                                int targetPage = i - activeModes.Count;
                                 if (targetPage == pageIndex) sb.AppendLine($"<color=#00FFFF>▶ 【{mName}预估】</color>");
                                 else sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
                             }
                         }
                         else
                         {
-                            sb.AppendLine($"<color=#888888><size=80%>[ 概览 {overviewIdx + 1} / {activeOverviewModes.Count} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
+                            sb.AppendLine($"<color=#888888><size=80%>[ 概览 {overviewIdx + 1} / {activeModes.Count} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                             sb.AppendLine("<color=#666666> ────────────────────</color>");
-                            for (int i = 0; i < activeOverviewModes.Count; i++)
+                            for (int i = 0; i < activeModes.Count; i++)
                             {
-                                string mName = GetChineseModeName(activeOverviewModes[i]);
-                                int targetPage = i - activeOverviewModes.Count;
+                                string mName = GetChineseModeName(activeModes[i]);
+                                int targetPage = i - activeModes.Count;
                                 if (targetPage == pageIndex) sb.AppendLine($"<color=#00FFFF>▶ 【{mName}预估】</color>");
                                 else sb.AppendLine($"  <color=#888888>【{mName}预估】</color>");
                             }
@@ -401,7 +483,7 @@ namespace TooltipFixMod
             }
         }
 
-        private static string CalculateSingleMergedEffect(List<LiquidSection> liquids, string containerName, string mode)
+        private static string CalculateSingleMergedEffect(List<LiquidSection> liquids, string containerName, string mode, List<string> activeModes)
         {
             if (liquids == null || liquids.Count == 0) return "";
             StringBuilder sb = new StringBuilder();
@@ -732,7 +814,7 @@ namespace TooltipFixMod
             return true;
         }
 
-        private static double GetMaxDose(string methodTitle, string containerName)
+        public static double GetMaxDose(string methodTitle, string containerName)
         {
             double maxDose = (methodTitle == "静脉注射") ? 20.0 : 100.0;
             if (LiquidEffectManager.ContainerMaxDoses != null && !string.IsNullOrEmpty(containerName))

@@ -99,6 +99,12 @@
 				<Stat Field="阿片受体" ValuePerML="1.4" ValueColor="#00FF00" />
 			</Stats>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<DosePrompts>
 			<DosePrompt Threshold="60.0" Message="超过推荐剂量(60ml)" />
 		</DosePrompts>
@@ -186,6 +192,12 @@
 				<Stat Field="恶心" ValuePerML="0.05" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 	</Liquid>
 
 	<Liquid Name="牛奶">
@@ -360,7 +372,7 @@
 				<Stat Field="水分" ValuePerML="0.09" ValueColor="#00FF00" />
 				<Stat Field="体温" ValuePerML="-0.001" ValueColor="#00FF00" Suffix="°C" />
 				<Stat Field="恶心" ValuePerML="-0.025" ValueColor="#00FF00" />
-				<Stat Field="体重" ValuePerML="0.007" ValueColor="#00FF00" />
+				<Stat Field="体重" ValuePerML="0.0007" ValueColor="#00FF00" />
 				<Stat Field="情绪" ValuePerML="-0.015" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
@@ -872,6 +884,12 @@
 				</Buff>
 			</Buffs>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<DosePrompts>
 			<DosePrompt Threshold="40.0" Message="超出过量阈值(&gt;40ml),将触发精神抹除" />
 		</DosePrompts>
@@ -884,6 +902,12 @@
 				<Special>&lt;color=#ffaa00&gt;清零智力等级经验，失去所有已学会的制作配方&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<DosePrompts>
 			<DosePrompt Threshold="0.1" Message="你确定要喝这个吗?" />
 		</DosePrompts>
@@ -899,6 +923,12 @@
 				<Special>&lt;color=#ffaa00&gt;30%概率引起呕吐, 药效期间平抑60%情绪起伏。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<DosePrompts>
 			<DosePrompt Threshold="50.0" Message="单次口服超过 50ml(剂量>250)，极易引发致命性血压骤降" />
 		</DosePrompts>
@@ -981,6 +1011,12 @@
 				</Buff>
 			</Buffs>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<DosePrompts>
 			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml),将触发药物过量" />
 		</DosePrompts>
@@ -992,6 +1028,12 @@
 				<Stat Field="药效剂量" ValuePerML="60.0" ValueColor="#00FF00" />
 			</Stats>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 		<DosePrompts>
 			<DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停,昏迷时更严重">
 				<Interaction ConditionStat="阿片受体" Operator=">" ConditionValue="15.0" Formula="2.5" CustomMessage="药物相互作用,安眠药安全剂量暴跌至 2.5ml " />
