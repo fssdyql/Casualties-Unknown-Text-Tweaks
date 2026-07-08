@@ -304,9 +304,6 @@ namespace TooltipFixMod
                         foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
 
                         sb.AppendLine("<color=#555555>──────────────────────────</color>");
-                        sb.AppendLine("<color=#888888><size=80%> 容器包含多种液体，此处仅显示成分列表。</size></color>");
-                        sb.AppendLine("<color=#888888><size=80%> 请滚动鼠标滚轮翻页查看各模式下的预估效果。</size></color>");
-                        sb.AppendLine("<color=#555555>──────────────────────────</color>");
                         sb.AppendLine($"<color=#888888><size=80%>[ 概览 1 / {activeOverviewModes.Count + 1} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                         sb.AppendLine("<color=#666666> ────────────────────</color>");
                         sb.AppendLine($"<color=#00FFFF>▶ 【成分列表】</color>");
