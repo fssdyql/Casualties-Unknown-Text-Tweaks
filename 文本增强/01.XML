@@ -40,8 +40,8 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="88.0" Message="超过静脉注射过量剂量(88ml)，有导致呼吸骤停的极高风险" />
-			<DosePrompt Threshold="180.0" Message="超过口服安全剂量(180ml)，有极高风险" />
+			<DosePrompt Method="静脉注射" Threshold="88.0" Message="超过静脉注射过量剂量(88ml)，有导致呼吸骤停的极高风险" />
+			<DosePrompt Method="口服" Threshold="180.0" Message="超过口服安全剂量(180ml)，有极高风险" />
 		</DosePrompts>
 	</Liquid>
 
@@ -87,8 +87,8 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="200.0" Message="超过静脉注射过量剂量(200ml)" />
-			<DosePrompt Threshold="360.0" Message="超过口服安全剂量(360ml)" />
+			<DosePrompt Method="静脉注射" Threshold="200.0" Message="超过静脉注射过量剂量(200ml)" />
+			<DosePrompt Method="口服" Threshold="360.0" Message="超过口服安全剂量(360ml)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -105,7 +105,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="60.0" Message="超过推荐剂量(60ml)" />
+			<DosePrompt Method="口服" Threshold="60.0" Message="超过推荐剂量(60ml)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -123,8 +123,8 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="55.0" Message="超过静脉注射安全剂量(55ml)" />
-			<DosePrompt Threshold="120.0" Message="超过口服安全剂量(120ml)" />
+			<DosePrompt Method="静脉注射" Threshold="55.0" Message="超过静脉注射安全剂量(55ml)" />
+			<DosePrompt Method="口服" Threshold="120.0" Message="超过口服安全剂量(120ml)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -183,7 +183,8 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="1.5" Message="极易过量！纯液安全剂量 &lt; 1.5ml (稀释液 &lt; 15~20ml)" />
+			<DosePrompt Method="静脉注射" Threshold="1.5" Message="极易过量！纯液安全剂量 &lt; 1.5ml (稀释液 &lt; 15~20ml)" />
+			<DosePrompt Method="口服" Threshold="1.5" Message="极易过量！纯液安全剂量 &lt; 1.5ml (稀释液 &lt; 15~20ml)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -270,8 +271,8 @@
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="130.0" Message="静脉注射超量风险(&gt;320秒)，可能触发过量反应" />
-			<DosePrompt Threshold="160.0" Message="口服超量风险(&gt;320秒)，可能触发过量反应" />
+			<DosePrompt Method="静脉注射" Threshold="130.0" Message="静脉注射超量风险(&gt;320秒)，可能触发过量反应" />
+			<DosePrompt Method="口服" Threshold="160.0" Message="口服超量风险(&gt;320秒)，可能触发过量反应" />
 		</DosePrompts>
 	</Liquid>
 
@@ -302,7 +303,7 @@
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="60.0" Message="静脉注射超过安全剂量(约60ml / &gt;220秒)，极易触发过量反应" />
+			<DosePrompt Method="静脉注射" Threshold="60.0" Message="静脉注射超过安全剂量(约60ml / &gt;220秒)，极易触发过量反应" />
 		</DosePrompts>
 	</Liquid>
 
@@ -349,8 +350,8 @@
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="45.0" Message="静脉注射超过安全剂量(约45ml / &gt;160秒)，极易触发过量反应" />
-			<DosePrompt Threshold="60.0" Message="口服超过安全剂量(约60ml / &gt;160秒)，极易触发过量反应" />
+			<DosePrompt Method="静脉注射" Threshold="45.0" Message="静脉注射超过安全剂量(约45ml / &gt;160秒)，极易触发过量反应" />
+			<DosePrompt Method="口服" Threshold="60.0" Message="口服超过安全剂量(约60ml / &gt;160秒)，极易触发过量反应" />
 		</DosePrompts>
 	</Liquid>
 
@@ -658,7 +659,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="25.0" Message="若一次性饮用超过 25ml，将直接导致剧烈呕吐。" />
+			<DosePrompt Method="口服" Threshold="25.0" Message="若一次性饮用超过 25ml，将直接导致剧烈呕吐。" />
 		</DosePrompts>
 	</Liquid>
 
@@ -925,7 +926,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="40.0" Message="超出过量阈值(&gt;40ml)，将触发精神抹除" />
+			<DosePrompt Method="口服" Threshold="40.0" Message="超出过量阈值(&gt;40ml)，将触发精神抹除" />
 		</DosePrompts>
 	</Liquid>
 
@@ -943,7 +944,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="0.1" Message="你确定要喝这个吗?" />
+			<DosePrompt Method="口服" Threshold="0.1" Message="你确定要喝这个吗?" />
 		</DosePrompts>
 	</Liquid>
 
@@ -964,7 +965,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="50.0" Message="单次口服超过 50ml(剂量&gt;250)，极易引发血压骤降(-3/秒)" />
+			<DosePrompt Method="口服" Threshold="50.0" Message="单次口服超过 50ml(剂量&gt;250)，极易引发血压骤降(-3/秒)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -1052,7 +1053,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml)，将触发药物过量(恶心+0.6/s, 胸痛+1.5/s)" />
+			<DosePrompt Method="口服" Threshold="40.0" Message="超过安全剂量(40ml)，将触发药物过量(恶心+0.6/s, 胸痛+1.5/s)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -1069,7 +1070,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停，昏迷时更严重">
+			<DosePrompt Method="口服" Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停，昏迷时更严重">
 				<Interaction ConditionStat="阿片受体" Operator="&gt;" ConditionValue="15.0" Formula="2.5" CustomMessage="药物相互作用：体内存在阿片类药物，安眠药安全剂量暴跌至 2.5ml" />
 			</DosePrompt>
 		</DosePrompts>
@@ -1133,7 +1134,8 @@
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml / 240秒)，将强制诱发严重心律失常" />
+			<DosePrompt Method="静脉注射" Threshold="40.0" Message="超过安全剂量(40ml / 240秒)，将强制诱发严重心律失常" />
+			<DosePrompt Method="口服" Threshold="240.0" Message="超过口服安全剂量(240ml / 240秒)，将强制诱发严重心律失常" />
 		</DosePrompts>
 	</Liquid>
 
@@ -1504,7 +1506,7 @@
 				<Stat Field="水分" ValuePerML="0.085" ValueColor="#00FF00" />
 				<Stat Field="饱腹" ValuePerML="0.02" ValueColor="#00FF00" />
 				<Stat Field="体温" ValuePerML="-0.003" ValueColor="#00FF00" Suffix="°C" />
-				<Stat Field="情绪" ValuePerML="0.0025" ValueColor="#00FF00" />
+				<Stat Field="情绪" ValuePerML="0.00025" ValueColor="#00FF00" />
 				<Stat Field="体重" ValuePerML="0.002" ValueColor="#00FF00" />
 			</Stats>
 		</Oral>
@@ -1545,11 +1547,10 @@
 		<ContainerMaxDose Keyword="消毒剂瓶" Method="外敷" MaxDose="10.0" />
 		<ContainerMaxDose Keyword="镇痛膏" Method="外敷" MaxDose="10.0" />
 		<ContainerMaxDose Keyword="伤口粘合" Method="外敷" MaxDose="20.0" />
-		<ContainerMaxDose Keyword="药瓶" Method="外敷" MaxDose="10.0" />
 
 		<ContainerMaxDose Keyword="战斗注射笔" Method="静脉注射" MaxDose="100.0" />
-		<ContainerMaxDose Keyword="促凝剂" Method="静脉注射" MaxDose="34.0" />
-		<ContainerMaxDose Keyword="链激酶" Method="静脉注射" MaxDose="34.0" />
+		<ContainerMaxDose Keyword="促凝剂" Method="静脉注射" MaxDose="33.334" />
+		<ContainerMaxDose Keyword="链激酶" Method="静脉注射" MaxDose="33.334" />
 		<ContainerMaxDose Keyword="抗血清" Method="静脉注射" MaxDose="50.0" />
 		<ContainerMaxDose Keyword="血袋" Method="静脉注射" MaxDose="375.0" />
 		<ContainerMaxDose Keyword="自动注射" Method="静脉注射" MaxDose="20.0" />
