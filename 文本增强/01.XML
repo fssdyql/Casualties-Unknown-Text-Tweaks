@@ -40,7 +40,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="80.0" Message="超过静脉注射安全剂量(80ml)，有导致呼吸骤停的极高风险" />
+			<DosePrompt Threshold="88.0" Message="超过静脉注射过量剂量(88ml)，有导致呼吸骤停的极高风险" />
 			<DosePrompt Threshold="180.0" Message="超过口服安全剂量(180ml)，有极高风险" />
 		</DosePrompts>
 	</Liquid>
@@ -69,7 +69,6 @@
 				<Stat Field="局部消毒" ValuePerML="0.3" ValueColor="#00FF00" Suffix="秒" />
 				<Stat Field="肌肉健康" ValuePerML="-0.1" ValueColor="#FF0000" />
 				<Stat Field="疼痛" ValuePerML="0.4" ValueColor="#FF0000" />
-				<!-- 恶心计算：注射本身 2 * 0.35 + 药剂逻辑 1.0 = 1.7 -->
 				<Stat Field="恶心" ValuePerML="1.7" ValueColor="#FF0000" />
 				<Stat Field="血液粘度" BaseValue="-0.2" ValuePerML="0" ValueColor="#00FF00" />
 			</Stats>
@@ -88,7 +87,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="180.0" Message="超过静脉注射安全剂量(180ml)" />
+			<DosePrompt Threshold="200.0" Message="超过静脉注射过量剂量(200ml)" />
 			<DosePrompt Threshold="360.0" Message="超过口服安全剂量(360ml)" />
 		</DosePrompts>
 	</Liquid>
@@ -155,6 +154,12 @@
 				</Buff>
 			</Buffs>
 		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.35" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.1" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
 	</Liquid>
 
 	<Liquid Name="头孢曲松">
@@ -178,7 +183,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="1.5" Message="极易过量！安全剂量 &lt; 1.5ml" />
+			<DosePrompt Threshold="1.5" Message="极易过量！纯液安全剂量 &lt; 1.5ml (稀释液 &lt; 15~20ml)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -221,18 +226,18 @@
 	<Liquid Name="氯仿">
 		<Oral>
 			<Buffs>
-				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="1.8">
+				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="1.8">
 					<TickStats>
-						<TickStat Field="意识" ValuePerML="-8.0" Suffix="(至0)" />
+						<TickStat Field="意识" BaseValue="-8.0" ValuePerML="0" Suffix="(至0)" />
 					</TickStats>
 				</Buff>
 			</Buffs>
 		</Oral>
 		<Injection>
 			<Buffs>
-				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="1.8">
+				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="1.8">
 					<TickStats>
-						<TickStat Field="意识" ValuePerML="-8.0" Suffix="(至0)" />
+						<TickStat Field="意识" BaseValue="-8.0" ValuePerML="0" Suffix="(至0)" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -244,10 +249,10 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="2.0">
 					<TickStats>
-						<TickStat Field="体力" ValuePerML="3.0" />
-						<TickStat Field="意识" ValuePerML="3.5" />
-						<TickStat Field="肾上腺素" ValuePerML="25.0" />
-						<TickStat Field="兴奋倍率" ValuePerML="0.05" Suffix="(至0.32)" />
+						<TickStat Field="体力" BaseValue="3.0" ValuePerML="0" />
+						<TickStat Field="意识" BaseValue="3.5" ValuePerML="0" />
+						<TickStat Field="肾上腺素" BaseValue="25.0" ValuePerML="0" />
+						<TickStat Field="兴奋倍率" BaseValue="0.05" ValuePerML="0" Suffix="(至0.32)" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -256,21 +261,21 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="2.4">
 					<TickStats>
-						<TickStat Field="体力" ValuePerML="3.0" />
-						<TickStat Field="意识" ValuePerML="3.5" />
-						<TickStat Field="肾上腺素" ValuePerML="25.0" />
-						<TickStat Field="兴奋倍率" ValuePerML="0.05" Suffix="(至0.32)" />
+						<TickStat Field="体力" BaseValue="3.0" ValuePerML="0" />
+						<TickStat Field="意识" BaseValue="3.5" ValuePerML="0" />
+						<TickStat Field="肾上腺素" BaseValue="25.0" ValuePerML="0" />
+						<TickStat Field="兴奋倍率" BaseValue="0.05" ValuePerML="0" Suffix="(至0.32)" />
 					</TickStats>
 				</Buff>
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="130.0" Message="静脉注射超量风险，可能触发严重过量反应" />
-			<DosePrompt Threshold="160.0" Message="口服超量风险，可能触发严重过量反应" />
+			<DosePrompt Threshold="130.0" Message="静脉注射超量风险(&gt;320秒)，可能触发过量反应" />
+			<DosePrompt Threshold="160.0" Message="口服超量风险(&gt;320秒)，可能触发过量反应" />
 		</DosePrompts>
 	</Liquid>
 
-	<Liquid Name="强效兴奋剂">
+	<Liquid Name="烈性兴奋剂">
 		<Oral>
 			<Stats>
 				<Stat Field="情绪" ValuePerML="-0.02" ValueColor="#FF0000" />
@@ -281,23 +286,23 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="3.6">
 					<TickStats>
-						<TickStat Field="体力" ValuePerML="2.0" />
-						<TickStat Field="意识" ValuePerML="2.0" />
-						<TickStat Field="精力" ValuePerML="0.1" />
-						<TickStat Field="肾上腺素" ValuePerML="7.0" />
-						<TickStat Field="兴奋倍率" ValuePerML="0.035" Suffix="(至0.25)" />
+						<TickStat Field="体力" BaseValue="2.0" ValuePerML="0" />
+						<TickStat Field="意识" BaseValue="2.0" ValuePerML="0" />
+						<TickStat Field="精力" BaseValue="0.1" ValuePerML="0" />
+						<TickStat Field="肾上腺素" BaseValue="7.0" ValuePerML="0" />
+						<TickStat Field="兴奋倍率" BaseValue="0.035" ValuePerML="0" Suffix="(至0.25)" />
 					</TickStats>
 				</Buff>
 				<Buff Name="副作用" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="3.6">
 					<TickStats>
-						<TickStat Field="恶心" ValuePerML="0.1" />
-						<TickStat Field="内出血" ValuePerML="0.06" />
+						<TickStat Field="恶心" BaseValue="0.1" ValuePerML="0" />
+						<TickStat Field="内出血" BaseValue="0.06" ValuePerML="0" />
 					</TickStats>
 				</Buff>
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="60.0" Message="静脉注射超过安全剂量(60ml)，极易触发致命过量反应" />
+			<DosePrompt Threshold="60.0" Message="静脉注射超过安全剂量(约60ml / &gt;220秒)，极易触发过量反应" />
 		</DosePrompts>
 	</Liquid>
 
@@ -309,17 +314,17 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="2.5">
 					<TickStats>
-						<TickStat Field="体力" ValuePerML="1.5" />
-						<TickStat Field="意识" ValuePerML="1.0" />
-						<TickStat Field="精力" ValuePerML="0.025" />
-						<TickStat Field="肾上腺素" ValuePerML="20.0" />
-						<TickStat Field="兴奋倍率" ValuePerML="0.035" Suffix="(至0.175)" />
+						<TickStat Field="体力" BaseValue="1.5" ValuePerML="0" />
+						<TickStat Field="意识" BaseValue="1.0" ValuePerML="0" />
+						<TickStat Field="精力" BaseValue="0.025" ValuePerML="0" />
+						<TickStat Field="肾上腺素" BaseValue="20.0" ValuePerML="0" />
+						<TickStat Field="兴奋倍率" BaseValue="0.035" ValuePerML="0" Suffix="(至0.175)" />
 					</TickStats>
 				</Buff>
 				<Buff Name="副作用" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="2.5">
 					<TickStats>
-						<TickStat Field="恶心" ValuePerML="0.18" />
-						<TickStat Field="体温" ValuePerML="0.03" Suffix="°C" />
+						<TickStat Field="恶心" BaseValue="0.18" ValuePerML="0" />
+						<TickStat Field="体温" BaseValue="0.03" ValuePerML="0" Suffix="°C" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -328,24 +333,24 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="3.25">
 					<TickStats>
-						<TickStat Field="体力" ValuePerML="1.5" />
-						<TickStat Field="意识" ValuePerML="1.0" />
-						<TickStat Field="精力" ValuePerML="0.025" />
-						<TickStat Field="肾上腺素" ValuePerML="20.0" />
-						<TickStat Field="兴奋倍率" ValuePerML="0.035" Suffix="(至0.175)" />
+						<TickStat Field="体力" BaseValue="1.5" ValuePerML="0" />
+						<TickStat Field="意识" BaseValue="1.0" ValuePerML="0" />
+						<TickStat Field="精力" BaseValue="0.025" ValuePerML="0" />
+						<TickStat Field="肾上腺素" BaseValue="20.0" ValuePerML="0" />
+						<TickStat Field="兴奋倍率" BaseValue="0.035" ValuePerML="0" Suffix="(至0.175)" />
 					</TickStats>
 				</Buff>
 				<Buff Name="副作用" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="3.25">
 					<TickStats>
-						<TickStat Field="恶心" ValuePerML="0.18" />
-						<TickStat Field="体温" ValuePerML="0.03" Suffix="°C" />
+						<TickStat Field="恶心" BaseValue="0.18" ValuePerML="0" />
+						<TickStat Field="体温" BaseValue="0.03" ValuePerML="0" Suffix="°C" />
 					</TickStats>
 				</Buff>
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="45.0" Message="静脉注射超过安全剂量(45ml)，极易触发严重过量反应" />
-			<DosePrompt Threshold="60.0" Message="口服超过安全剂量(60ml)，极易触发严重过量反应" />
+			<DosePrompt Threshold="45.0" Message="静脉注射超过安全剂量(约45ml / &gt;160秒)，极易触发过量反应" />
+			<DosePrompt Threshold="60.0" Message="口服超过安全剂量(约60ml / &gt;160秒)，极易触发过量反应" />
 		</DosePrompts>
 	</Liquid>
 
@@ -682,9 +687,9 @@
 				<Stat Field="体温" ValuePerML="-0.002" ValueColor="#00FF00" Suffix="°C" />
 			</Stats>
 			<Buffs>
-				<Buff Name="辐射病" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Effect" BaseDuration="45" DurationPerML="0">
+				<Buff Name="辐射病" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="0.45">
 					<TickStats>
-						<TickStat Field="增加" ValuePerML="0.0035" />
+						<TickStat Field="增加" BaseValue="0.35" ValuePerML="0" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -705,9 +710,9 @@
 				<Stat Field="恶心" ValuePerML="0.25" ValueColor="#FF0000" />
 			</Stats>
 			<Buffs>
-				<Buff Name="副作用" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Effect" BaseDuration="200" DurationPerML="0">
+				<Buff Name="副作用" NameColor="#FF0000" ValueColor="#FF0000" StackMode="Duration" BaseDuration="0" DurationPerML="2.0">
 					<TickStats>
-						<TickStat Field="脑部健康" ValuePerML="-0.0005" />
+						<TickStat Field="脑部健康" BaseValue="-0.05" ValuePerML="0" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -834,7 +839,36 @@
 		</Topical>
 	</Liquid>
 
-	<Liquid Name="伤口粘合剂">
+	<Liquid Name="局部麻醉剂">
+		<Oral>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="0.1" ValueColor="#FF0000" />
+			</Stats>
+			<Specials>
+				<Special>&lt;color=#ffaa00&gt;高量口服大概率引发呕吐。&lt;/color&gt;</Special>
+			</Specials>
+		</Oral>
+		<Injection>
+			<Buffs>
+				<Buff Name="局部麻醉" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="6.0">
+					<TickStats>
+						<TickStat Field="本肢疼痛归0，肢体发力归0(最后2秒恢复)" BaseValue="0" ValuePerML="0" Prefix="" />
+					</TickStats>
+				</Buff>
+			</Buffs>
+		</Injection>
+		<Topical>
+			<Buffs>
+				<Buff Name="局部麻醉" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="6.0">
+					<TickStats>
+						<TickStat Field="本肢疼痛归0，肢体发力归0(最后2秒恢复)" BaseValue="0" ValuePerML="0" Prefix="" />
+					</TickStats>
+				</Buff>
+			</Buffs>
+		</Topical>
+	</Liquid>
+
+	<Liquid Name="伤口粘合胶">
 		<Oral>
 			<Stats>
 				<Stat Field="恶心" ValuePerML="0.1" ValueColor="#FF0000" />
@@ -864,7 +898,7 @@
 				</Stat>
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#00FF00&gt;疼痛会依使用剂量百分比减少&lt;/color&gt;</Special>
+				<Special>&lt;color=#00FF00&gt;单次 20mL 使本肢疼痛 -10% (低于 20mL 时按比例更低)。&lt;/color&gt;</Special>
 			</Specials>
 		</Topical>
 	</Liquid>
@@ -891,15 +925,15 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="40.0" Message="超出过量阈值(&gt;40ml),将触发精神抹除" />
+			<DosePrompt Threshold="40.0" Message="超出过量阈值(&gt;40ml)，将触发精神抹除" />
 		</DosePrompts>
 	</Liquid>
 
 	<Liquid Name="精神抹除剂">
 		<Oral>
 			<Specials>
-				<Special>&lt;color=#00FF00&gt;启动精神抹除程序，回复脑部健康并清除负面精神状态&lt;/color&gt;</Special>
-				<Special>&lt;color=#ffaa00&gt;清零智力等级经验，失去所有已学会的制作配方&lt;/color&gt;</Special>
+				<Special>&lt;color=#00FF00&gt;启动精神抹除程序，脑部健康 +50 并清除创伤与情绪&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;清零智力等级与经验，遗忘所有已制作配方 (状态良好时拒服)&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
 		<Injection>
@@ -920,7 +954,7 @@
 				<Stat Field="药效剂量" ValuePerML="5.0" ValueColor="#00FF00" />
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#ffaa00&gt;30%概率引起呕吐, 药效期间平抑60%情绪起伏。&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;30%概率引起恶心(+1.5/mL)，药效期间平抑60%情绪起伏。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
 		<Injection>
@@ -930,7 +964,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="50.0" Message="单次口服超过 50ml(剂量>250)，极易引发致命性血压骤降" />
+			<DosePrompt Threshold="50.0" Message="单次口服超过 50ml(剂量&gt;250)，极易引发血压骤降(-3/秒)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -958,7 +992,7 @@
 		</Oral>
 		<Injection>
 			<Stats>
-				<Stat Field="毒素" ValuePerML="-0.8" ValueColor="#00FF00" />
+				<Stat Field="毒素" ValuePerML="-1.2" ValueColor="#00FF00" />
 			</Stats>
 		</Injection>
 	</Liquid>
@@ -988,7 +1022,7 @@
 				<Stat Field="爪子生长时间" ValuePerML="24.0" ValueColor="#00FF00" Suffix="秒" />
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#ffaa00&gt;若生长时间溢出(&gt;3600秒)，收益将大幅度降低并产生恶心副作用。&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;若生长时间溢出(&gt;3600秒)，收益降至10%并产生恶心副作用。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
 		<Injection>
@@ -996,7 +1030,7 @@
 				<Stat Field="爪子生长时间" ValuePerML="28.0" ValueColor="#00FF00" Suffix="秒" />
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#ffaa00&gt;若生长时间溢出(&gt;3600秒)，收益将大幅度降低并产生恶心副作用。&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;若生长时间溢出(&gt;3600秒)，收益降至10%并产生恶心副作用。&lt;/color&gt;</Special>
 			</Specials>
 		</Injection>
 	</Liquid>
@@ -1006,7 +1040,7 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="4.5">
 					<TickStats>
-						<TickStat Field="辐射病" ValuePerML="-0.2" />
+						<TickStat Field="辐射病" BaseValue="-0.2" ValuePerML="0" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -1018,7 +1052,7 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml),将触发药物过量" />
+			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml)，将触发药物过量(恶心+0.6/s, 胸痛+1.5/s)" />
 		</DosePrompts>
 	</Liquid>
 
@@ -1035,8 +1069,8 @@
 			</Stats>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停,昏迷时更严重">
-				<Interaction ConditionStat="阿片受体" Operator=">" ConditionValue="15.0" Formula="2.5" CustomMessage="药物相互作用,安眠药安全剂量暴跌至 2.5ml " />
+			<DosePrompt Threshold="15.0" Message="单次剂量达到 15ml (药效900)，将导致低血压和呼吸骤停，昏迷时更严重">
+				<Interaction ConditionStat="阿片受体" Operator="&gt;" ConditionValue="15.0" Formula="2.5" CustomMessage="药物相互作用：体内存在阿片类药物，安眠药安全剂量暴跌至 2.5ml" />
 			</DosePrompt>
 		</DosePrompts>
 	</Liquid>
@@ -1084,7 +1118,7 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="1.0">
 					<TickStats>
-						<TickStat Field="肾上腺素维持满值并有几率复苏心脏" ValuePerML="0" Prefix="" />
+						<TickStat Field="肾上腺素维持满值并有几率复苏心脏" BaseValue="0" ValuePerML="0" Prefix="" />
 					</TickStats>
 				</Buff>
 			</Buffs>
@@ -1093,13 +1127,13 @@
 			<Buffs>
 				<Buff Name="效果" NameColor="#b7b7b7" ValueColor="#00FF00" StackMode="Duration" BaseDuration="0" DurationPerML="6.0">
 					<TickStats>
-						<TickStat Field="肾上腺素维持满值并有几率复苏心脏" ValuePerML="0" Prefix="" />
+						<TickStat Field="肾上腺素维持满值并有几率复苏心脏" BaseValue="0" ValuePerML="0" Prefix="" />
 					</TickStats>
 				</Buff>
 			</Buffs>
 		</Injection>
 		<DosePrompts>
-			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml)，将导致严重心律失常" />
+			<DosePrompt Threshold="40.0" Message="超过安全剂量(40ml / 240秒)，将强制诱发严重心律失常" />
 		</DosePrompts>
 	</Liquid>
 
@@ -1263,7 +1297,7 @@
 		</Injection>
 	</Liquid>
 
-	<Liquid Name="外星血液">
+	<Liquid Name="异种血液">
 		<Oral>
 			<Stats>
 				<Stat Field="水分" ValuePerML="0.0266" ValueColor="#00FF00" />
@@ -1315,7 +1349,7 @@
 				<Stat Field="体温" ValuePerML="-0.0025" ValueColor="#00FF00" Suffix="°C" />
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#ffaa00&gt;若未使用过滤吸管，有一半概率产生 7.0~15.0 恶心，并降低情绪。&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;若未使用过滤吸管，50%概率产生 7.0~15.0 恶心，并每100ml降低 0.25 情绪。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
 		<Injection>
@@ -1336,7 +1370,7 @@
 				<Stat Field="情绪" ValuePerML="-0.01" ValueColor="#FF0000" />
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#ffaa00&gt;有较高概率产生 6.0~8.5 恶心（使用过滤吸管可减弱其效果），且有小概率引发呕吐。&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;65%概率产生 6.0~8.5 恶心/100ml（过滤吸管降至30%），且10%概率呕吐。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
 		<Injection>
@@ -1347,13 +1381,34 @@
 		</Injection>
 	</Liquid>
 
+	<Liquid Name="猩红垢泥">
+		<Oral>
+			<Stats>
+				<Stat Field="水分" ValuePerML="0.03" ValueColor="#00FF00" />
+				<Stat Field="饱腹" ValuePerML="0.03" ValueColor="#00FF00" />
+				<Stat Field="体重" ValuePerML="0.01" ValueColor="#00FF00" />
+				<Stat Field="情绪" ValuePerML="-0.05" ValueColor="#FF0000" />
+				<Stat Field="恶心" ValuePerML="0.1" ValueColor="#FF0000" />
+			</Stats>
+			<Specials>
+				<Special>&lt;color=#ffaa00&gt;50% 概率引发呕吐（使用过滤吸管可避免呕吐）。&lt;/color&gt;</Special>
+			</Specials>
+		</Oral>
+		<Injection>
+			<Stats>
+				<Stat Field="恶心" ValuePerML="1.05" ValueColor="#FF0000" />
+				<Stat Field="血液粘度" BaseValue="-0.3" ValuePerML="0" ValueColor="#00FF00" />
+			</Stats>
+		</Injection>
+	</Liquid>
+
 	<Liquid Name="原油">
 		<Oral>
 			<Stats>
 				<Stat Field="水分" ValuePerML="0.01" ValueColor="#00FF00" />
 				<Stat Field="饱腹" ValuePerML="0.02" ValueColor="#00FF00" />
 				<Stat Field="体重" ValuePerML="0.03" ValueColor="#00FF00" />
-				<Stat Field="情绪" ValuePerML="-0.03" ValueColor="#FF0000" />
+				<Stat Field="情绪" BaseValue="-3.0" ValuePerML="0" ValueColor="#FF0000" />
 				<Stat Field="恶心" ValuePerML="0.3" ValueColor="#FF0000" />
 			</Stats>
 		</Oral>
@@ -1390,7 +1445,7 @@
 				<Stat Field="体温" ValuePerML="-0.0025" ValueColor="#00FF00" Suffix="°C" />
 			</Stats>
 			<Specials>
-				<Special>&lt;color=#ffaa00&gt;若未使用过滤吸管，将产生 6.0~8.0 恶心并降低情绪。&lt;/color&gt;</Special>
+				<Special>&lt;color=#ffaa00&gt;若未使用过滤吸管，将产生 6.0~8.0 恶心/100ml 并固定降低 1.0 情绪。&lt;/color&gt;</Special>
 			</Specials>
 		</Oral>
 		<Injection>
@@ -1449,7 +1504,7 @@
 				<Stat Field="水分" ValuePerML="0.085" ValueColor="#00FF00" />
 				<Stat Field="饱腹" ValuePerML="0.02" ValueColor="#00FF00" />
 				<Stat Field="体温" ValuePerML="-0.003" ValueColor="#00FF00" Suffix="°C" />
-				<Stat Field="情绪" ValuePerML="0.00025" ValueColor="#00FF00" />
+				<Stat Field="情绪" ValuePerML="0.0025" ValueColor="#00FF00" />
 				<Stat Field="体重" ValuePerML="0.002" ValueColor="#00FF00" />
 			</Stats>
 		</Oral>
@@ -1467,7 +1522,7 @@
 				<Stat Field="水分" ValuePerML="0.095" ValueColor="#00FF00" />
 				<Stat Field="饱腹" ValuePerML="0.025" ValueColor="#00FF00" />
 				<Stat Field="体温" ValuePerML="-0.002" ValueColor="#00FF00" Suffix="°C" />
-				<Stat Field="情绪" ValuePerML="0.002" ValueColor="#00FF00" />
+				<Stat Field="情绪" ValuePerML="0.02" ValueColor="#00FF00" />
 				<Stat Field="体重" ValuePerML="0.002" ValueColor="#00FF00" />
 			</Stats>
 		</Oral>
@@ -1492,6 +1547,7 @@
 		<ContainerMaxDose Keyword="伤口粘合" Method="外敷" MaxDose="20.0" />
 		<ContainerMaxDose Keyword="药瓶" Method="外敷" MaxDose="10.0" />
 
+		<ContainerMaxDose Keyword="战斗注射笔" Method="静脉注射" MaxDose="100.0" />
 		<ContainerMaxDose Keyword="促凝剂" Method="静脉注射" MaxDose="34.0" />
 		<ContainerMaxDose Keyword="链激酶" Method="静脉注射" MaxDose="34.0" />
 		<ContainerMaxDose Keyword="抗血清" Method="静脉注射" MaxDose="50.0" />

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
@@ -12,7 +11,7 @@ using UnityEngine;
 
 namespace TooltipFixMod
 {
-    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.1.3")]
+    [BepInPlugin("com.yourname.tooltipfix", "Tooltip Display Fix", "0.3.0")]
     public class TooltipFixPlugin : BaseUnityPlugin
     {
         public static string ConfigPath;
@@ -25,7 +24,7 @@ namespace TooltipFixMod
             Harmony harmony = new Harmony("com.yourname.tooltipfix");
             harmony.PatchAll();
 
-            Logger.LogInfo($"TooltipFixMod v0.1.3 Loaded.");
+            Logger.LogInfo("TooltipFixMod v0.3.0 Loaded.");
         }
     }
 
@@ -49,6 +48,124 @@ namespace TooltipFixMod
         }
     }
 
+    [HarmonyPatch(typeof(PlayerCamera), "HandleBlockHover", new Type[] { typeof(Collider2D) })]
+    public class HandleBlockHoverPatch
+    {
+        [HarmonyPostfix]
+        public static void Postfix()
+        {
+            if (WorldGeneration.world == null || !WorldGeneration.world.worldExists || Camera.main == null || GlobalDark.main == null)
+                return;
+
+            ushort blockId = WorldGeneration.world.GetBlock(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+            if (blockId == 0) return;
+
+            BlockInfo info = WorldGeneration.world.GetBlockInfo(blockId);
+            if (info == null) return;
+
+            string extra = BlockTooltipHelper.GetBlockSpecialDesc(blockId, info);
+            if (string.IsNullOrEmpty(extra)) return;
+
+            ValueTuple<string, string> cur = GlobalDark.main.tooltipText;
+            if (string.IsNullOrEmpty(cur.Item2))
+                cur.Item2 = extra;
+            else
+                cur.Item2 = cur.Item2 + "\n\n" + extra;
+
+            GlobalDark.main.tooltipText = cur;
+        }
+    }
+
+    public static class BlockTooltipHelper
+    {
+        public static string GetBlockSpecialDesc(ushort blockId, BlockInfo info)
+        {
+            List<string> lines = new List<string>();
+
+            switch (info.sleep)
+            {
+                case Body.SleepQuality.Good:
+                    lines.Add("<color=#00FF00>睡眠质量：优质 (恢复速率 1.25x，醒来附带振奋)</color>");
+                    break;
+                case Body.SleepQuality.Okay:
+                    lines.Add("<color=#FFFFFF>睡眠质量：良好 (恢复速率 1.0x)</color>");
+                    break;
+                case Body.SleepQuality.Mediocre:
+                    lines.Add("<color=#FFFF00>睡眠质量：一般 (恢复速率 0.85x，睡醒后意识下降)</color>");
+                    break;
+                case Body.SleepQuality.Bad:
+                    lines.Add("<color=#FF3333>睡眠质量：糟糕 (恢复速率 0.7x，睡醒后长期意识下降)</color>");
+                    break;
+            }
+
+            if (info.toxicity > 0f)
+            {
+                lines.Add($"<color=#FF3333>危险 - 辐射源：站立其上每秒辐射 +{info.toxicity:0.#}</color>");
+            }
+
+            if (info.hot)
+            {
+                lines.Add("<color=#FF3333>危险 - 高温灼足：站立每秒双脚皮肤 -20 / 疼痛 +20 (受护甲减免)，体温 +0.1℃/s</color>");
+            }
+
+            if (info.slippery)
+            {
+                lines.Add("<color=#FFFF00>警告 - 表面湿滑：移动推力降至 20% 且失去地面摩擦减速</color>");
+            }
+
+            if (info.health <= 1f && blockId != 0)
+            {
+                lines.Add("<color=#FFFF00>警告 - 极易破碎：踩踏后会立即碎裂坍塌</color>");
+            }
+
+            if (info.health >= 400000000f)
+            {
+                lines.Add("<color=#FF3333>不可破坏：无法被常规工具或爆炸摧毁</color>");
+            }
+
+            if (info.metallic)
+            {
+                lines.Add("<color=#FFFFFF>金属材质：受等离子切割器 10倍 伤害</color>");
+            }
+
+            switch (blockId)
+            {
+                case 3:
+                    lines.Add("<color=#00FF00>破坏掉落：50% 掉落 金属废料 (5~20% 耐久)</color>");
+                    break;
+                case 6:
+                case 10:
+                    lines.Add("<color=#00FF00>破坏掉落：75% 掉落 金属废料 (50~100% 耐久)</color>");
+                    break;
+                case 7:
+                    lines.Add("<color=#FFFF00>破坏掉落：40% 掉落 玻璃碎片</color>");
+                    break;
+                case 8:
+                case 9:
+                    lines.Add("<color=#00FF00>破坏掉落：50% 掉落 塑料块</color>");
+                    break;
+                case 11:
+                case 24:
+                    lines.Add("<color=#00FF00>破坏掉落：100% 掉落 木屑</color>");
+                    break;
+                case 25:
+                    lines.Add("<color=#00FF00>破坏掉落：7.5% 掉落 植物纤维 (50~100% 耐久)</color>");
+                    break;
+                case 27:
+                    lines.Add("<color=#FFFFFF>破坏转化：50% 融化为 1 格地下水</color>");
+                    break;
+                case 34:
+                    lines.Add("<color=#00FF00>破坏掉落：100% 掉落 锈铜矿块</color>");
+                    break;
+                case 35:
+                    lines.Add("<color=#00FF00>破坏掉落：100% 掉落 钛铁矿块</color>");
+                    break;
+            }
+
+            return string.Join("\n", lines);
+        }
+    }
+
     public static class UIUtilPatchHelper
     {
         private static readonly Regex LiquidHeaderRegex = new Regex(
@@ -59,10 +176,16 @@ namespace TooltipFixMod
         private static string lastRawInputName = "";
         private static bool lastShiftState = false;
         private static int currentPageIndex = -1;
-        private static string lastOutputDesc = "";
+        private static int lastScrollFrame = -1;
+
+        private static string lastModdedSourceName = "";
+        private static string lastModdedSourceDesc = "";
+        private static string lastModdedOutput = "";
+        private static float bridgeUntilTime = -1f;
 
         private static List<LiquidSection> cachedLiquids = new List<LiquidSection>();
         private static string cachedContainerHeader = "";
+        private static string cachedContainerFooter = "";
         private static List<string> activeOverviewModes = new List<string>();
         private static bool useSplitOverview = false;
         private static bool useLiquidListPage = false;
@@ -72,9 +195,15 @@ namespace TooltipFixMod
         public class LiquidSection
         {
             public string Name;
+            public string ConfigKey;
             public double AmountML;
             public string headerLine;
             public List<string> bodyLines = new List<string>();
+        }
+
+        private static bool IsExpandActive()
+        {
+            return PlayerCamera.alwaysExpandDescriptions || Input.GetKey(KeyBinds.GetBind("expanddesc"));
         }
 
         public static void MangleTooltip(ref ValueTuple<string, string> tooltip)
@@ -87,8 +216,14 @@ namespace TooltipFixMod
                 return;
             }
 
-            bool isShiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            float scrollDelta = Input.mouseScrollDelta.y;
+            // 防止同一帧二次传入已被改写过的文本导致缓存损坏与二次翻页
+            if (!string.IsNullOrEmpty(lastModdedOutput) && rawName == lastModdedSourceName && rawDesc == lastModdedOutput)
+            {
+                return;
+            }
+
+            bool isShiftHeld = IsExpandActive();
+            float scrollDelta = (Time.frameCount != lastScrollFrame) ? Input.mouseScrollDelta.y : 0f;
 
             bool descChanged = (rawDesc != lastRawInputDesc || rawName != lastRawInputName);
 
@@ -96,11 +231,11 @@ namespace TooltipFixMod
             {
                 lastRawInputDesc = rawDesc;
                 lastRawInputName = rawName;
-                ParseLiquids(rawDesc, out cachedLiquids, out cachedContainerHeader);
+                ParseLiquids(rawDesc, out cachedLiquids, out cachedContainerHeader, out cachedContainerFooter);
                 EvaluateOverviewStrategy(rawName);
 
                 StringBuilder structSb = new StringBuilder(rawName);
-                foreach (var l in cachedLiquids) structSb.Append("_").Append(l.Name);
+                foreach (var l in cachedLiquids) structSb.Append("_").Append(l.ConfigKey);
                 string currentStructure = structSb.ToString();
 
                 if (currentStructure != lastLiquidStructure)
@@ -126,7 +261,26 @@ namespace TooltipFixMod
             if (!isShiftHeld)
             {
                 currentPageIndex = minPage;
-                lastOutputDesc = rawDesc;
+
+                if (lastShiftState)
+                {
+                    bridgeUntilTime = Time.unscaledTime + 0.15f;
+                }
+
+                bool inBridgeWindow = Time.unscaledTime < bridgeUntilTime;
+                if (inBridgeWindow
+                    && rawName == lastModdedSourceName && rawDesc == lastModdedSourceDesc
+                    && !string.IsNullOrEmpty(lastModdedOutput))
+                {
+                    tooltip.Item2 = lastModdedOutput;
+                }
+                else
+                {
+                    bridgeUntilTime = -1f;
+                    lastModdedSourceName = "";
+                    lastModdedSourceDesc = "";
+                    lastModdedOutput = "";
+                }
             }
             else
             {
@@ -138,50 +292,71 @@ namespace TooltipFixMod
                     bool pageChanged = false;
                     if (Mathf.Abs(scrollDelta) > 0.01f)
                     {
+                        lastScrollFrame = Time.frameCount;
                         int totalStates = cachedLiquids.Count - minPage;
                         int offset = (scrollDelta > 0f) ? -1 : 1;
                         currentPageIndex = ((currentPageIndex - minPage + offset) % totalStates + totalStates) % totalStates + minPage;
                         pageChanged = true;
                     }
 
-                    if (!descChanged && isShiftHeld == lastShiftState && !pageChanged)
+                    bool needRebuild = descChanged || !lastShiftState || pageChanged
+                        || string.IsNullOrEmpty(lastModdedOutput);
+                    if (needRebuild)
                     {
-                        tooltip.Item2 = lastOutputDesc;
-                        return;
+                        lastModdedOutput = BuildModdedText(cachedLiquids, cachedContainerHeader, cachedContainerFooter, rawName, currentPageIndex);
+                        lastModdedSourceName = rawName;
+                        lastModdedSourceDesc = rawDesc;
                     }
-
-                    lastOutputDesc = BuildModdedText(cachedLiquids, cachedContainerHeader, rawName, currentPageIndex);
+                    tooltip.Item2 = lastModdedOutput;
                 }
                 else
                 {
-                    lastOutputDesc = rawDesc;
+                    lastModdedSourceName = "";
+                    lastModdedSourceDesc = "";
+                    lastModdedOutput = "";
                 }
             }
 
             lastShiftState = isShiftHeld;
-            tooltip.Item2 = lastOutputDesc;
         }
 
-        private static void ParseLiquids(string rawDesc, out List<LiquidSection> liquids, out string containerHeader)
+        private static void ParseLiquids(string rawDesc, out List<LiquidSection> liquids, out string containerHeader, out string containerFooter)
         {
             liquids = new List<LiquidSection>();
             containerHeader = "";
+            containerFooter = "";
             bool foundFirstLiquid = false;
+            bool inFooter = false;
 
             string[] lines = rawDesc.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
             LiquidSection currentLiquid = null;
 
             foreach (string line in lines)
             {
+                if (inFooter)
+                {
+                    containerFooter += line + "\n";
+                    continue;
+                }
+
+                if (foundFirstLiquid && line.StartsWith("<color=#ffffff><sprite index=0 tint=1>", StringComparison.Ordinal))
+                {
+                    inFooter = true;
+                    containerFooter += line + "\n";
+                    continue;
+                }
+
                 Match m = LiquidHeaderRegex.Match(line);
                 if (m.Success)
                 {
                     foundFirstLiquid = true;
-                    double.TryParse(m.Groups[2].Value, out double amt);
+                    double.TryParse(m.Groups[2].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out double amt);
+                    string cleanName = LiquidEffectManager.CleanLiquidName(m.Groups[1].Value);
                     currentLiquid = new LiquidSection
                     {
                         headerLine = line,
-                        Name = LiquidEffectManager.CleanLiquidName(m.Groups[1].Value),
+                        Name = cleanName,
+                        ConfigKey = cleanName,
                         AmountML = amt
                     };
                     liquids.Add(currentLiquid);
@@ -190,6 +365,19 @@ namespace TooltipFixMod
                 {
                     if (!foundFirstLiquid) containerHeader += line + "\n";
                     else currentLiquid?.bodyLines.Add(line);
+                }
+            }
+
+            foreach (var l in liquids)
+            {
+                string joinedBody = string.Join("\n", l.bodyLines);
+                if (l.Name == "过滤水" && joinedBody.Contains("放射性"))
+                {
+                    l.ConfigKey = "放射水";
+                }
+                else if (l.Name == "柠檬水" && joinedBody.Contains("尿"))
+                {
+                    l.ConfigKey = "尿液";
                 }
             }
         }
@@ -217,7 +405,7 @@ namespace TooltipFixMod
 
             foreach (var l in cachedLiquids)
             {
-                if (LiquidEffectManager.TryGetConfig(l.Name, out var data))
+                if (LiquidEffectManager.TryGetConfig(l.ConfigKey, out var data))
                 {
                     if (data.Oral != null && (data.Oral.Stats?.Count > 0 || data.Oral.Buffs?.Count > 0 || data.Oral.Specials?.Count > 0)) hasOral = true;
                     if (data.Injection != null && (data.Injection.Stats?.Count > 0 || data.Injection.Buffs?.Count > 0 || data.Injection.Specials?.Count > 0)) hasInj = true;
@@ -233,7 +421,7 @@ namespace TooltipFixMod
 
             if (activeOverviewModes.Count > 0)
             {
-                string combinedText = BuildFullCombinedText(cachedLiquids, cachedContainerHeader, containerName);
+                string combinedText = BuildFullCombinedText(cachedLiquids, cachedContainerHeader, cachedContainerFooter, containerName);
                 int lines = GetLineCount(combinedText);
 
                 if (lines > safeLineLimit)
@@ -245,14 +433,15 @@ namespace TooltipFixMod
             if (useSplitOverview)
             {
                 int listLines = GetLineCount(cachedContainerHeader.TrimEnd()) + cachedLiquids.Count;
-                int footerLines = 3 + activeOverviewModes.Count;
+                int itemFooterLines = string.IsNullOrEmpty(cachedContainerFooter) ? 0 : GetLineCount(cachedContainerFooter.TrimEnd());
+                int navFooterLines = 3 + activeOverviewModes.Count;
 
                 foreach (var mode in activeOverviewModes)
                 {
                     string merged = CalculateSingleMergedEffect(cachedLiquids, containerName, mode);
                     int mergedLines = GetLineCount(merged);
 
-                    int totalExpectedLines = listLines + 1 + mergedLines + footerLines;
+                    int totalExpectedLines = listLines + 1 + mergedLines + itemFooterLines + navFooterLines;
                     if (totalExpectedLines > safeLineLimit)
                     {
                         useLiquidListPage = true;
@@ -273,7 +462,14 @@ namespace TooltipFixMod
             }
         }
 
-        private static string BuildFullCombinedText(List<LiquidSection> liquids, string containerHeader, string containerName)
+        private static bool MatchesMethod(DosePromptEntry dp, string methodTitle, string modeEn)
+        {
+            if (string.IsNullOrEmpty(dp.Method)) return true;
+            return dp.Method.Equals(methodTitle, StringComparison.OrdinalIgnoreCase)
+                || dp.Method.Equals(modeEn, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildFullCombinedText(List<LiquidSection> liquids, string containerHeader, string containerFooter, string containerName)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(containerHeader.TrimEnd());
@@ -281,14 +477,20 @@ namespace TooltipFixMod
 
             sb.AppendLine("<color=#555555>──────────────────────────</color>");
             string merged = CalculateAllMergedEffects(liquids, containerName);
-            if (!string.IsNullOrEmpty(merged)) sb.AppendLine(merged);
+            if (!string.IsNullOrEmpty(merged)) sb.AppendLine(merged.TrimEnd());
+
+            if (!string.IsNullOrEmpty(containerFooter))
+            {
+                sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                sb.AppendLine(containerFooter.TrimEnd());
+            }
 
             sb.AppendLine("<color=#555555>──────────────────────────</color>");
             sb.AppendLine("<color=#888888><size=80%> 滚动鼠标滚轮翻页查看详细成分 </size></color>");
             return sb.ToString();
         }
 
-        private static string BuildModdedText(List<LiquidSection> liquids, string containerHeader, string containerName, int pageIndex)
+        private static string BuildModdedText(List<LiquidSection> liquids, string containerHeader, string containerFooter, string containerName, int pageIndex)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -303,10 +505,16 @@ namespace TooltipFixMod
                         sb.AppendLine(containerHeader.TrimEnd());
                         foreach (var l in liquids) sb.AppendLine($"  <color=#CCCCCC>{l.headerLine}</color>");
 
+                        if (!string.IsNullOrEmpty(containerFooter))
+                        {
+                            sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                            sb.AppendLine(containerFooter.TrimEnd());
+                        }
+
                         sb.AppendLine("<color=#555555>──────────────────────────</color>");
                         sb.AppendLine($"<color=#888888><size=80%>[ 概览 1 / {activeOverviewModes.Count + 1} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                         sb.AppendLine("<color=#666666> ────────────────────</color>");
-                        sb.AppendLine($"<color=#00FFFF>▶ 【成分列表】</color>");
+                        sb.AppendLine("<color=#00FFFF>▶ 【成分列表】</color>");
                         for (int i = 0; i < activeOverviewModes.Count; i++)
                         {
                             string mName = GetChineseModeName(activeOverviewModes[i]);
@@ -328,7 +536,13 @@ namespace TooltipFixMod
                             string mode = activeOverviewModes[overviewIdx];
                             sb.AppendLine("<color=#555555>──────────────────────────</color>");
                             string mergedEffectString = CalculateSingleMergedEffect(liquids, containerName, mode);
-                            if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString);
+                            if (!string.IsNullOrEmpty(mergedEffectString)) sb.AppendLine(mergedEffectString.TrimEnd());
+                        }
+
+                        if (!string.IsNullOrEmpty(containerFooter))
+                        {
+                            sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                            sb.AppendLine(containerFooter.TrimEnd());
                         }
 
                         sb.AppendLine("<color=#555555>──────────────────────────</color>");
@@ -339,7 +553,7 @@ namespace TooltipFixMod
                             int currentPageNum = overviewIdx + 2;
                             sb.AppendLine($"<color=#888888><size=80%>[ 概览 {currentPageNum} / {totalPages} ] 滚动鼠标滚轮切换预估模式/成分页</size></color>");
                             sb.AppendLine("<color=#666666> ────────────────────</color>");
-                            sb.AppendLine($"  <color=#888888>【成分列表】</color>");
+                            sb.AppendLine("  <color=#888888>【成分列表】</color>");
                             for (int i = 0; i < activeOverviewModes.Count; i++)
                             {
                                 string mName = GetChineseModeName(activeOverviewModes[i]);
@@ -364,7 +578,7 @@ namespace TooltipFixMod
                 }
                 else
                 {
-                    sb.Append(BuildFullCombinedText(liquids, containerHeader, containerName));
+                    sb.Append(BuildFullCombinedText(liquids, containerHeader, containerFooter, containerName));
                 }
             }
             else
@@ -373,6 +587,12 @@ namespace TooltipFixMod
                 var currentLiq = liquids[pageIndex];
                 sb.AppendLine($"<color=#FFFFFF><b>{currentLiq.headerLine}</b></color>");
                 foreach (string bl in currentLiq.bodyLines) sb.AppendLine(bl);
+
+                if (!string.IsNullOrEmpty(containerFooter))
+                {
+                    sb.AppendLine("<color=#555555>──────────────────────────</color>");
+                    sb.AppendLine(containerFooter.TrimEnd());
+                }
 
                 sb.AppendLine("<color=#555555>──────────────────────────</color>");
                 sb.AppendLine($"<color=#888888><size=80%>[成分第 {pageIndex + 1} / {liquids.Count} 页]</size></color>");
@@ -430,7 +650,7 @@ namespace TooltipFixMod
 
                 foreach (var liq in liquids)
                 {
-                    if (LiquidEffectManager.TryGetConfig(liq.Name, out var liquidData) && liquidData.DosePrompts != null)
+                    if (LiquidEffectManager.TryGetConfig(liq.ConfigKey, out var liquidData) && liquidData.DosePrompts != null)
                     {
                         var usageData = selector(liquidData);
                         if (usageData == null) continue;
@@ -438,6 +658,8 @@ namespace TooltipFixMod
                         double intakeML = liq.AmountML * maxConsumeRatio;
                         foreach (var dp in liquidData.DosePrompts)
                         {
+                            if (!MatchesMethod(dp, methodTitle, mode)) continue;
+
                             double currentThreshold = dp.Threshold;
                             string currentMessage = dp.Message;
 
@@ -457,7 +679,7 @@ namespace TooltipFixMod
                             }
 
                             if (intakeML > 0 && intakeML >= currentThreshold)
-                                promptSb.AppendLine($"  <color=#FF5555>• [{liq.Name}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {currentMessage}</color>");
+                                promptSb.AppendLine($"  <color=#FF5555>• [{liq.ConfigKey}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {currentMessage}</color>");
                         }
                     }
                 }
@@ -531,36 +753,52 @@ namespace TooltipFixMod
 
             if (totalVolume > 0)
             {
-                double maxPossibleIntake = Math.Max(GetMaxDose("口服", containerName), Math.Max(GetMaxDose("静脉注射", containerName), GetMaxDose("外敷", containerName)));
-                double maxConsumeRatio = Math.Min(totalVolume, maxPossibleIntake) / totalVolume;
+                double oralRatio = hasOral ? Math.Min(totalVolume, GetMaxDose("口服", containerName)) / totalVolume : 0;
+                double injRatio = hasInj ? Math.Min(totalVolume, GetMaxDose("静脉注射", containerName)) / totalVolume : 0;
+                double topRatio = hasTop ? Math.Min(totalVolume, GetMaxDose("外敷", containerName)) / totalVolume : 0;
+                double grandRatio = Math.Min(totalVolume, Math.Max(GetMaxDose("口服", containerName), Math.Max(GetMaxDose("静脉注射", containerName), GetMaxDose("外敷", containerName)))) / totalVolume;
 
                 foreach (var liq in liquids)
                 {
-                    if (LiquidEffectManager.TryGetConfig(liq.Name, out var liquidData) && liquidData.DosePrompts != null)
+                    if (LiquidEffectManager.TryGetConfig(liq.ConfigKey, out var liquidData) && liquidData.DosePrompts != null)
                     {
-                        double intakeML = liq.AmountML * maxConsumeRatio;
                         foreach (var dp in liquidData.DosePrompts)
                         {
-                            double currentThreshold = dp.Threshold;
-                            string currentMessage = dp.Message;
-
-                            if (dp.Interactions != null)
+                            void CheckPromptForRoute(double routeRatio, Dictionary<string, double> routeStats)
                             {
-                                foreach (var inter in dp.Interactions)
+                                double intakeML = liq.AmountML * routeRatio;
+                                double currentThreshold = dp.Threshold;
+                                string currentMessage = dp.Message;
+
+                                if (dp.Interactions != null)
                                 {
-                                    double condVal = grandMaxStats.ContainsKey(inter.ConditionStat) ? grandMaxStats[inter.ConditionStat] : 0;
-                                    if (EvaluateCondition(condVal, inter.Operator, inter.ConditionValue))
+                                    foreach (var inter in dp.Interactions)
                                     {
-                                        if (!string.IsNullOrEmpty(inter.Formula))
-                                            currentThreshold = MathEvaluator.Evaluate(inter.Formula, currentThreshold, intakeML, grandMaxStats);
-                                        if (!string.IsNullOrEmpty(inter.CustomMessage))
-                                            currentMessage = inter.CustomMessage;
+                                        double condVal = routeStats.ContainsKey(inter.ConditionStat) ? routeStats[inter.ConditionStat] : 0;
+                                        if (EvaluateCondition(condVal, inter.Operator, inter.ConditionValue))
+                                        {
+                                            if (!string.IsNullOrEmpty(inter.Formula))
+                                                currentThreshold = MathEvaluator.Evaluate(inter.Formula, currentThreshold, intakeML, routeStats);
+                                            if (!string.IsNullOrEmpty(inter.CustomMessage))
+                                                currentMessage = inter.CustomMessage;
+                                        }
                                     }
                                 }
+
+                                if (intakeML > 0 && intakeML >= currentThreshold)
+                                    promptSb.AppendLine($"  <color=#FF5555>• [{liq.ConfigKey}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {currentMessage}</color>");
                             }
 
-                            if (intakeML > 0 && intakeML >= currentThreshold)
-                                promptSb.AppendLine($"  <color=#FF5555>• [{liq.Name}]单次预估超标 ({Math.Round(intakeML, 1)}ml): {currentMessage}</color>");
+                            if (string.IsNullOrEmpty(dp.Method))
+                            {
+                                CheckPromptForRoute(grandRatio, grandMaxStats);
+                            }
+                            else
+                            {
+                                if (hasOral && liquidData.Oral != null && MatchesMethod(dp, "口服", "Oral")) CheckPromptForRoute(oralRatio, oralStats);
+                                if (hasInj && liquidData.Injection != null && MatchesMethod(dp, "静脉注射", "Injection")) CheckPromptForRoute(injRatio, injectionStats);
+                                if (hasTop && liquidData.Topical != null && MatchesMethod(dp, "外敷", "Topical")) CheckPromptForRoute(topRatio, topicalStats);
+                            }
                         }
                     }
                 }
@@ -620,7 +858,7 @@ namespace TooltipFixMod
 
             foreach (var liq in liquids)
             {
-                if (LiquidEffectManager.TryGetConfig(liq.Name, out var liquidData))
+                if (LiquidEffectManager.TryGetConfig(liq.ConfigKey, out var liquidData))
                 {
                     UsageMethodEntry useData = selector(liquidData);
                     if (useData == null) continue;
@@ -655,10 +893,10 @@ namespace TooltipFixMod
                         {
                             if (string.IsNullOrEmpty(buff.Name)) continue;
 
-                            string buffKey = $"{liq.Name}_{buff.Name}";
+                            string buffKey = $"{liq.ConfigKey}_{buff.Name}";
                             bool isFirstInit = !totalBuffs.ContainsKey(buffKey);
 
-                            string displayName = liquids.Count > 1 ? $"[{liq.Name}] {buff.Name}" : buff.Name;
+                            string displayName = liquids.Count > 1 ? $"[{liq.ConfigKey}] {buff.Name}" : buff.Name;
 
                             if (isFirstInit) totalBuffs[buffKey] = (0, 0, buff, displayName);
 
@@ -760,7 +998,8 @@ namespace TooltipFixMod
                 string exp = formula.Replace("x", x.ToString(CultureInfo.InvariantCulture))
                                     .Replace("ML", ml.ToString(CultureInfo.InvariantCulture));
 
-                exp = Regex.Replace(exp, @"\[(.*?)\]", match => {
+                exp = Regex.Replace(exp, @"\[(.*?)\]", match =>
+                {
                     string key = match.Groups[1].Value;
                     double val = contextStats.ContainsKey(key) ? contextStats[key] : 0;
                     return val.ToString(CultureInfo.InvariantCulture);
@@ -839,7 +1078,6 @@ namespace TooltipFixMod
             return x;
         }
     }
-
 
     [XmlRoot("LiquidEffects")]
     public class LiquidEffectsRoot { [XmlElement("Liquid")] public List<LiquidEntry> Liquids = new List<LiquidEntry>(); [XmlArray("GlobalEffectPrompts"), XmlArrayItem("EffectPrompt")] public List<EffectPromptEntry> GlobalEffectPrompts = new List<EffectPromptEntry>(); [XmlArray("ContainerMaxDoses"), XmlArrayItem("ContainerMaxDose")] public List<ContainerMaxDosesEntry> ContainerMaxDoses = new List<ContainerMaxDosesEntry>(); }
@@ -957,6 +1195,7 @@ namespace TooltipFixMod
 
     public class DosePromptEntry
     {
+        [XmlAttribute] public string Method = "";
         [XmlAttribute] public double Threshold;
         [XmlAttribute] public string Message;
         [XmlElement("Interaction")] public List<InteractionRule> Interactions = new List<InteractionRule>();
