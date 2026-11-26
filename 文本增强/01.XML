@@ -910,7 +910,6 @@
 	<Liquid Name="增脑剂">
 		<Oral>
 			<Stats>
-				<Stat Field="情绪" ValuePerML="-0.25" ValueColor="#FF0000" />
 				<Stat Field="恶心" ValuePerML="1.0" ValueColor="#FF0000" />
 			</Stats>
 			<Buffs>
@@ -1556,9 +1555,14 @@
 		<ContainerMaxDose Keyword="链激酶" Method="静脉注射" MaxDose="33.334" />
 		<ContainerMaxDose Keyword="抗血清" Method="静脉注射" MaxDose="50.0" />
 		<ContainerMaxDose Keyword="血袋" Method="静脉注射" MaxDose="375.0" />
-		<ContainerMaxDose Keyword="海洛因注射器" Method="静脉注射" MaxDose="150.0" />
-		<ContainerMaxDose Keyword="注射器" Method="静脉注射" MaxDose="100.0" />
 		<ContainerMaxDose Keyword="静脉输液袋" Method="静脉注射" MaxDose="80.0" />
+		<ContainerMaxDose Keyword="芬太尼" Method="静脉注射" MaxDose="10.0" />
+		<ContainerMaxDose Keyword="吗啡" Method="静脉注射" MaxDose="20.0" />
+		<ContainerMaxDose Keyword="头孢曲松" Method="静脉注射" MaxDose="20.0" />
+		<ContainerMaxDose Keyword="纳洛酮" Method="静脉注射" MaxDose="20.0" />
+		<ContainerMaxDose Keyword="海洛因" Method="静脉注射" MaxDose="30.0" />
+		<ContainerMaxDose Keyword="鸦片" Method="静脉注射" MaxDose="30.0" />
+		<ContainerMaxDose Keyword="注射器" Method="静脉注射" MaxDose="20.0" />
 
 		<ContainerMaxDose Keyword="安眠药" Method="口服" MaxDose="5.0" />
 		<ContainerMaxDose Keyword="止痛药" Method="口服" MaxDose="10.0" />
